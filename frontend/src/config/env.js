@@ -5,9 +5,14 @@ const defaultApiUrl = 'http://localhost:8000/api';
 // Handle dynamic Vite injection (e.g., from Render deploying the backend)
 let baseApiUrl = import.meta.env.VITE_API_URL || defaultApiUrl;
 
-// If Render passes just the 'host' (e.g., nexus-backend-xyz.onrender.com), make it a full URL
+// If Render passes just the 'host' (e.g., "nexus-backend-xyz"), make it a full URL
 if (!baseApiUrl.startsWith('http://') && !baseApiUrl.startsWith('https://')) {
-    baseApiUrl = `https://${baseApiUrl}`;
+    // If it's a Render internal host without a TLD, append .onrender.com
+    if (!baseApiUrl.includes('.') && baseApiUrl !== 'localhost') {
+        baseApiUrl = `https://${baseApiUrl}.onrender.com`;
+    } else {
+        baseApiUrl = `https://${baseApiUrl}`;
+    }
 }
 
 if (!baseApiUrl.endsWith('/api')) {
