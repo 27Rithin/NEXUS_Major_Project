@@ -38,4 +38,4 @@ services:
         fromService:
           type: web
           name: nexus-backend
-          property: url
+          property: host
