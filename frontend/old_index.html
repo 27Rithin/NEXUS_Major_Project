@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>NEXUS - Disaster Response Command Center</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Leaflet Map CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #0f172a;
+            color: white;
+        }
+
+        header {
+            background: #111827;
+            padding: 15px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .container {
+            display: flex;
+            height: 90vh;
+        }
+
+        .sidebar {
+            width: 25%;
+            background: #1f2937;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            border-bottom: 1px solid gray;
+            padding-bottom: 8px;
+        }
+
+        .incident {
+            background: #374151;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+
+        .severity-high {
+            color: red;
+            font-weight: bold;
+        }
+
+        .severity-medium {
+            color: orange;
+            font-weight: bold;
+        }
+
+        .severity-low {
+            color: lightgreen;
+            font-weight: bold;
+        }
+
+        #map {
+            width: 75%;
+        }
+
+        footer {
+            text-align: center;
+            padding: 8px;
+            background: #111827;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        🚨 NEXUS – Multi-Modal Disaster Response Agent
+    </header>
+
+    <div class="container">
+
+        <div class="sidebar">
+            <h2>Live Incident Feed</h2>
+
+            <div class="incident">
+                <p><strong>Location:</strong> Bhavani Nagar</p>
+                <p><strong>Type:</strong> Flood</p>
+                <p class="severity-high">Severity: HIGH</p>
+            </div>
+
+            <div class="incident">
+                <p><strong>Location:</strong> Tirupati Center</p>
+                <p><strong>Type:</strong> Fire</p>
+                <p class="severity-medium">Severity: MEDIUM</p>
+            </div>
+
+            <div class="incident">
+                <p><strong>Location:</strong> Rural Zone</p>
+                <p><strong>Type:</strong> Heavy Rain</p>
+                <p class="severity-low">Severity: LOW</p>
+            </div>
+
+        </div>
+
+        <div id="map"></div>
+
+    </div>
+
+    <footer>
+        MCA Major Project | AI Cross-Modal Disaster Intelligence Platform
+    </footer>
+
+    <script>
+        // Initialize Map
+        var map = L.map('map').setView([13.6288, 79.4192], 13); // Tirupati Coordinates
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Flood Marker
+        var floodMarker = L.marker([13.6300, 79.4200]).addTo(map);
+        floodMarker.bindPopup("<b>Flood - HIGH Severity</b><br>Immediate Rescue Required");
+
+        // Fire Marker
+        var fireMarker = L.marker([13.6250, 79.4150]).addTo(map);
+        fireMarker.bindPopup("<b>Fire - MEDIUM Severity</b><br>Fire Team Dispatched");
+
+    </script>
+
+</body>
+
+</html>

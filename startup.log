@@ -1,0 +1,813 @@
+[27-03-2026 21:35:41.63] NEXUS Launcher started. 
+[21:35:45.86] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+Traceback (most recent call last):
+  File "E:\Major_Project\NEXUS_Major_Project\backend\init_db.py", line 57, in init_database
+    print(f"\u2705 Database '{target_db}' already exists.")
+  File "C:\Program Files\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 0: character maps to <undefined>
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\Major_Project\NEXUS_Major_Project\backend\init_db.py", line 72, in <module>
+    init_database()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\init_db.py", line 63, in init_database
+    print(f"\u274c FAILED to initialize database: {e}")
+  File "C:\Program Files\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u274c' in position 0: character maps to <undefined>
+[21:36:25.23] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade e7818c12c656 -> fef011e7c80c, Add RescueUnit model
+Traceback (most recent call last):
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.DuplicateTable: relation "rescue_units" already exists
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Scripts\alembic.exe\__main__.py", line 7, in <module>
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 1047, in main
+    CommandLine(prog=prog).main(argv=argv)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 1037, in main
+    self.run_cmd(cfg, options)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 971, in run_cmd
+    fn(
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\command.py", line 483, in upgrade
+    script.run_env()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\script\base.py", line 545, in run_env
+    util.load_python_file(self.dir, "env.py")
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\util\pyfiles.py", line 116, in load_python_file
+    module = load_module_py(module_id, path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\util\pyfiles.py", line 136, in load_module_py
+    spec.loader.exec_module(module)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 994, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "E:\Major_Project\NEXUS_Major_Project\backend\alembic\env.py", line 87, in <module>
+    run_migrations_online()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\alembic\env.py", line 81, in run_migrations_online
+    context.run_migrations()
+  File "<string>", line 8, in run_migrations
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\runtime\environment.py", line 969, in run_migrations
+    self.get_context().run_migrations(**kw)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\runtime\migration.py", line 626, in run_migrations
+    step.migration_fn(**kw)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\alembic\versions\fef011e7c80c_add_rescueunit_model.py", line 25, in upgrade
+    op.create_table('rescue_units',
+  File "<string>", line 8, in create_table
+  File "<string>", line 3, in create_table
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\operations\ops.py", line 1331, in create_table
+    return operations.invoke(op)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\operations\base.py", line 452, in invoke
+    return fn(self, operation)
+           ^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\operations\toimpl.py", line 140, in create_table
+    operations.impl.create_table(table, **kw)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\ddl\impl.py", line 442, in create_table
+    self._exec(schema.CreateTable(table, **kw))
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\ddl\impl.py", line 256, in _exec
+    return conn.execute(construct, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\sql\ddl.py", line 187, in _execute_on_connection
+    return connection._execute_ddl(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1530, in _execute_ddl
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.DuplicateTable) relation "rescue_units" already exists
+
+[SQL: 
+CREATE TABLE rescue_units (
+	id UUID NOT NULL, 
+	callsign VARCHAR(100) NOT NULL, 
+	unit_type VARCHAR(50) NOT NULL, 
+	location geometry(POINT,4326) NOT NULL, 
+	status VARCHAR(50), 
+	last_active_timestamp TIMESTAMP WITH TIME ZONE DEFAULT now(), 
+	PRIMARY KEY (id), 
+	UNIQUE (callsign)
+)
+
+]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+[21:37:21.73] Backend service launched. 
+[27-03-2026 21:43:28.80] NEXUS Launcher started. 
+[21:43:31.65] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[21:43:47.05] Running Alembic Migrations... 
+Traceback (most recent call last):
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3309, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1264, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 711, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 306, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 388, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 673, in __init__
+    self.__connect()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 899, in __connect
+    with util.safe_reraise():
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 895, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\create.py", line 661, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\psycopg2\__init__.py", line 135, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.OperationalError: connection to server at "localhost" (::1), port 5432 failed: FATAL:  password authentication failed for user "postgres"
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Scripts\alembic.exe\__main__.py", line 7, in <module>
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 1047, in main
+    CommandLine(prog=prog).main(argv=argv)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 1037, in main
+    self.run_cmd(cfg, options)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 971, in run_cmd
+    fn(
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\command.py", line 483, in upgrade
+    script.run_env()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\script\base.py", line 545, in run_env
+    util.load_python_file(self.dir, "env.py")
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\util\pyfiles.py", line 116, in load_python_file
+    module = load_module_py(module_id, path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\util\pyfiles.py", line 136, in load_module_py
+    spec.loader.exec_module(module)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 994, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "E:\Major_Project\NEXUS_Major_Project\backend\alembic\env.py", line 87, in <module>
+    run_migrations_online()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\alembic\env.py", line 75, in run_migrations_online
+    with connectable.connect() as connection:
+         ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3285, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 145, in __init__
+    Connection._handle_dbapi_exception_noconnection(
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2448, in _handle_dbapi_exception_noconnection
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3309, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1264, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 711, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 306, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 388, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 673, in __init__
+    self.__connect()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 899, in __connect
+    with util.safe_reraise():
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 895, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\create.py", line 661, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\psycopg2\__init__.py", line 135, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: FATAL:  password authentication failed for user "postgres"
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[21:44:23.59] Backend service launched. 
+[21:45:44.31] Backend service launched. 
+[27-03-2026 21:46:14.73] NEXUS Launcher started. 
+[21:46:15.14] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[21:46:16.96] Running Alembic Migrations... 
+Traceback (most recent call last):
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3309, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1264, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 711, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 306, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 388, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 673, in __init__
+    self.__connect()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 899, in __connect
+    with util.safe_reraise():
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 895, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\create.py", line 661, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\psycopg2\__init__.py", line 135, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.OperationalError: connection to server at "localhost" (::1), port 5432 failed: FATAL:  password authentication failed for user "postgres"
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Scripts\alembic.exe\__main__.py", line 7, in <module>
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 1047, in main
+    CommandLine(prog=prog).main(argv=argv)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 1037, in main
+    self.run_cmd(cfg, options)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 971, in run_cmd
+    fn(
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\command.py", line 483, in upgrade
+    script.run_env()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\script\base.py", line 545, in run_env
+    util.load_python_file(self.dir, "env.py")
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\util\pyfiles.py", line 116, in load_python_file
+    module = load_module_py(module_id, path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\util\pyfiles.py", line 136, in load_module_py
+    spec.loader.exec_module(module)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 994, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "E:\Major_Project\NEXUS_Major_Project\backend\alembic\env.py", line 87, in <module>
+    run_migrations_online()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\alembic\env.py", line 75, in run_migrations_online
+    with connectable.connect() as connection:
+         ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3285, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 145, in __init__
+    Connection._handle_dbapi_exception_noconnection(
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2448, in _handle_dbapi_exception_noconnection
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3309, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1264, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 711, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 306, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 388, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 673, in __init__
+    self.__connect()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 899, in __connect
+    with util.safe_reraise():
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 895, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\create.py", line 661, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\psycopg2\__init__.py", line 135, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to server at "localhost" (::1), port 5432 failed: FATAL:  password authentication failed for user "postgres"
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[21:46:37.48] Backend service launched. 
+[27-03-2026 21:47:07.31] NEXUS Launcher started. 
+[21:47:07.62] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[21:47:08.77] Running Alembic Migrations... 
+^CTraceback (most recent call last):
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3309, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1264, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 711, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 306, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 388, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 673, in __init__
+    self.__connect()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 899, in __connect
+    with util.safe_reraise():
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 895, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\create.py", line 661, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\psycopg2\__init__.py", line 135, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.OperationalError: could not translate host name "04@localhost" to address: Non-recoverable failure in name resolution
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Scripts\alembic.exe\__main__.py", line 7, in <module>
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 1047, in main
+    CommandLine(prog=prog).main(argv=argv)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 1037, in main
+    self.run_cmd(cfg, options)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 971, in run_cmd
+    fn(
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\command.py", line 483, in upgrade
+    script.run_env()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\script\base.py", line 545, in run_env
+    util.load_python_file(self.dir, "env.py")
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\util\pyfiles.py", line 116, in load_python_file
+    module = load_module_py(module_id, path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\util\pyfiles.py", line 136, in load_module_py
+    spec.loader.exec_module(module)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 994, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "E:\Major_Project\NEXUS_Major_Project\backend\alembic\env.py", line 87, in <module>
+    run_migrations_online()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\alembic\env.py", line 75, in run_migrations_online
+    with connectable.connect() as connection:
+         ^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3285, in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 145, in __init__
+    Connection._handle_dbapi_exception_noconnection(
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2448, in _handle_dbapi_exception_noconnection
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 143, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 3309, in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 447, in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 1264, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 711, in checkout
+    rec = pool._do_get()
+          ^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\impl.py", line 306, in _do_get
+    return self._create_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 388, in _create_connection
+    return _ConnectionRecord(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 673, in __init__
+    self.__connect()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 899, in __connect
+    with util.safe_reraise():
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\util\langhelpers.py", line 224, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\pool\base.py", line 895, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\create.py", line 661, in connect
+    return dialect.connect(*cargs, **cparams)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\psycopg2\__init__.py", line 135, in connect
+    conn = _connect(dsn, connection_factory=connection_factory, **kwasync)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) could not translate host name "04@localhost" to address: Non-recoverable failure in name resolution
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[21:47:53.69] Backend service launched. 
+[27-03-2026 21:48:27.64] NEXUS Launcher started. 
+[21:48:40.78] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[21:48:42.29] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade e7818c12c656 -> fef011e7c80c, Add RescueUnit model
+[ALEMBIC] Table 'rescue_units' already exists. Skipping creation.
+[21:48:49.13] Backend service launched. 
+[27-03-2026 21:50:15.53] NEXUS Launcher started. 
+[21:50:16.92] Running DB Init... 
+Traceback (most recent call last):
+  File "E:\Major_Project\NEXUS_Major_Project\backend\init_db.py", line 10, in <module>
+    from config import settings
+  File "E:\Major_Project\NEXUS_Major_Project\backend\config.py", line 1, in <module>
+    from pydantic_settings import BaseSettings
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic_settings\__init__.py", line 2, in <module>
+    from .main import BaseSettings, CliApp, SettingsConfigDict
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic_settings\main.py", line 17, in <module>
+    from pydantic.dataclasses import is_pydantic_dataclass
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic\dataclasses.py", line 15, in <module>
+    from ._internal import _dataclasses as _pydantic_dataclasses
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic\_internal\_dataclasses.py", line 23, in <module>
+    from ..fields import FieldInfo
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic\fields.py", line 23, in <module>
+    from . import types
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic\types.py", line 3265, in <module>
+    @_dataclasses.dataclass
+     ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\dataclasses.py", line 1266, in dataclass
+    return wrap(cls)
+           ^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\dataclasses.py", line 1256, in wrap
+    return _process_class(cls, init, repr, eq, order, unsafe_hash,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\dataclasses.py", line 1092, in _process_class
+    _cmp_fn('__eq__', '==',
+  File "C:\Program Files\Python312\Lib\dataclasses.py", line 667, in _cmp_fn
+    return _create_fn(name,
+           ^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python312\Lib\dataclasses.py", line 473, in _create_fn
+    exec(txt, globals, ns)
+  File "<string>", line 0, in <module>
+KeyboardInterrupt
+^C[21:50:28.45] UNHEALTHY STATUS DETECTED. 
+[21:50:28.64] Backend service launched. 
+[21:55:35.21] Frontend restart triggered. 
+[21:55:35.87] Frontend restart triggered. 
+[21:55:45.99] Frontend restart triggered. 
+[21:55:46.37] Frontend restart triggered. 
+[27-03-2026 23:18:39.38] NEXUS Launcher started. 
+[23:18:39.83] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[23:18:44.97] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[23:18:54.77] Starting Frontend... 
+[23:18:54.82] Backend service launched. 
+[28-03-2026 10:46:00.11] NEXUS Launcher started. 
+[10:46:00.59] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[10:46:03.56] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[10:46:09.29] Starting Frontend... 
+[10:46:09.33] Backend service launched. 
+[12:05:35.07] UNHEALTHY STATUS DETECTED. 
+[12:05:43.27] Backend service launched. 
+[12:07:50.20] Backend service launched. 
+[12:09:57.17] Backend service launched. 
+[12:12:03.44] Backend service launched. 
+[12:14:09.54] Backend service launched. 
+[12:16:15.53] FATAL: Retry limit exceeded. 
+[28-03-2026 12:51:26.25] NEXUS Launcher started. 
+[12:51:28.03] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[12:51:42.88] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[12:51:55.09] Backend service launched. 
+[12:53:56.34] UNHEALTHY STATUS DETECTED. 
+[12:53:58.98] Backend service launched. 
+[13:02:34.20] UNHEALTHY STATUS DETECTED. 
+[13:02:39.18] Backend service launched. 
+[13:03:09.95] UNHEALTHY STATUS DETECTED. 
+[13:03:10.46] Backend service launched. 
+[13:15:02.33] UNHEALTHY STATUS DETECTED. 
+[13:15:27.29] Backend service launched. 
+[13:17:55.08] Backend service launched. 
+[13:20:17.43] Backend service launched. 
+[13:35:17.18] UNHEALTHY STATUS DETECTED. 
+[13:35:34.54] Backend service launched. 
+[28-03-2026 13:40:10.64] NEXUS Launcher started. 
+[13:40:11.14] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[13:40:15.88] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[13:40:24.64] Starting Frontend... 
+[13:40:24.67] Backend service launched. 
+[13:55:14.87] UNHEALTHY STATUS DETECTED. 
+[13:55:16.01] Backend service launched. 
+[28-03-2026 13:56:34.07] NEXUS Launcher started. 
+[13:56:34.50] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[13:56:36.79] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[13:56:42.74] Backend service launched. 
+[14:34:30.63] UNHEALTHY STATUS DETECTED. 
+[14:34:32.04] UNHEALTHY STATUS DETECTED. 
+[14:34:34.10] Backend service launched. 
+[14:34:34.13] Backend service launched. 
+[28-03-2026 14:35:36.82] NEXUS Launcher started. 
+[14:35:37.94] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[14:35:44.89] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[14:35:54.80] Backend service launched. 
+[14:41:45.07] UNHEALTHY STATUS DETECTED. 
+[14:41:46.45] Backend service launched. 
+[14:41:46.52] Backend service launched. 
+[14:41:47.35] UNHEALTHY STATUS DETECTED. 
+[14:41:48.89] Backend service launched. 
+[28-03-2026 14:42:55.22] NEXUS Launcher started. 
+[14:42:55.82] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[14:42:59.12] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[14:43:08.33] Backend service launched. 
+[14:44:46.92] Backend service launched. 
+[14:44:56.33] Backend service launched. 
+[15:27:39.75] UNHEALTHY STATUS DETECTED. 
+[28-03-2026 15:29:33.67] NEXUS Launcher started. 
+[15:29:34.03] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[15:29:40.10] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[15:29:46.11] Starting Frontend... 
+[15:29:46.14] Backend service launched. 
+[28-03-2026 15:30:18.19] NEXUS Launcher started. 
+[15:30:18.47] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[15:30:19.58] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[15:30:21.61] Backend service launched. 
+[15:55:05.39] UNHEALTHY STATUS DETECTED. 
+[15:55:20.99] UNHEALTHY STATUS DETECTED. 
+[15:57:52.86] Backend service launched. 
+[28-03-2026 16:02:06.96] NEXUS Launcher started. 
+[16:02:07.62] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[16:02:15.22] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[16:02:24.26] Starting Frontend... 
+[16:02:24.31] Backend service launched. 
+[16:04:32.84] Backend service launched. 
+[16:06:41.35] Backend service launched. 
+[16:08:50.08] Backend service launched. 
+[16:10:57.88] Backend service launched. 
+[16:13:06.26] FATAL: Retry limit exceeded. 
+[28-03-2026 18:06:34.50] NEXUS Launcher started. 
+[18:06:35.45] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[18:06:40.86] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[18:06:46.71] Starting Frontend... 
+[18:06:46.74] Backend service launched. 
