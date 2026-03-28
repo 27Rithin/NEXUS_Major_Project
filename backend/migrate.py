@@ -6,6 +6,15 @@ import models
 def run_migrations():
     print("Running NEXUS Database Migrations...")
     
+    # 0. Enable PostGIS Extension
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
+            conn.commit()
+            print("[OK] PostGIS Extension enabled.")
+    except Exception as e:
+        print(f"[WARN] Could not create PostGIS extension (might already exist or lack permissions): {e}")
+
     # 1. Create all tables if they don't exist
     models.Base.metadata.create_all(bind=engine)
     print("[OK] Base tables created/verified.")
