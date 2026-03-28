@@ -29,6 +29,7 @@ app.add_middleware(
         "http://localhost:5175",
         "http://127.0.0.1:5175"
     ],
+    allow_origin_regex=r"https://.*\.onrender\.com",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
