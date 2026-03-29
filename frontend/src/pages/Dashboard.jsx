@@ -169,8 +169,8 @@ export default function Dashboard() {
 
   // Pseudo-calculation for Average Response Time (mock or derived from events)
   const deployedEvents = eventList.filter(e => e && (e.status === 'In Progress' || e.status === 'Resolved'));
-  const avgResponseTime = deployedEvents.length > 0 ?
-    Math.round(deployedEvents.reduce((acc, curr) => acc + ((curr.priority_score || 0) * 0.8), 0) / deployedEvents.length) + "m"
+  const avgResponseTime = (deployedEvents?.length > 0) ?
+    Math.round(deployedEvents.reduce((acc, curr) => acc + ((curr?.priority_score || 0) * 0.8), 0) / deployedEvents.length) + "m"
     : "N/A";
 
   return (
@@ -187,9 +187,9 @@ export default function Dashboard() {
             <div className="flex flex-col gap-0.5">
               <span className="text-[8px] text-slate-500 uppercase font-black tracking-widest">WS-GATEWAY</span>
               <div className="flex items-center gap-1.5 min-w-[80px]">
-                <div className={`w-1.5 h-1.5 rounded-full ${wsStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : wsStatus === 'connecting' ? 'bg-amber-500' : 'bg-red-500'}`} />
-                <span className={`text-[10px] font-bold ${wsStatus === 'connected' ? 'text-emerald-400' : wsStatus === 'connecting' ? 'text-amber-400' : 'text-red-400'}`}>
-                  {wsStatus === 'connected' ? 'STABLE' : wsStatus === 'connecting' ? 'SYNCING' : 'OFFLINE'}
+                <div className={`w-1.5 h-1.5 rounded-full ${(wsStatus || 'connecting') === 'connected' ? 'bg-emerald-500 animate-pulse' : (wsStatus || 'connecting') === 'connecting' ? 'bg-amber-500' : 'bg-red-500'}`} />
+                <span className={`text-[10px] font-bold ${(wsStatus || 'connecting') === 'connected' ? 'text-emerald-400' : (wsStatus || 'connecting') === 'connecting' ? 'text-amber-400' : 'text-red-400'}`}>
+                  {(wsStatus || 'connecting') === 'connected' ? 'STABLE' : (wsStatus || 'connecting') === 'connecting' ? 'SYNCING' : 'OFFLINE'}
                 </span>
               </div>
             </div>
@@ -200,9 +200,9 @@ export default function Dashboard() {
             <div className="flex flex-col gap-0.5">
               <span className="text-[8px] text-slate-500 uppercase font-black tracking-widest">API-CORE</span>
               <div className="flex items-center gap-1.5 min-w-[70px]">
-                <div className={`w-1.5 h-1.5 rounded-full ${apiHealth === 'healthy' ? 'bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]' : apiHealth === 'degraded' ? 'bg-amber-500' : 'bg-red-600'}`} />
-                <span className={`text-[10px] font-bold ${apiHealth === 'healthy' ? 'text-cyan-400' : apiHealth === 'degraded' ? 'text-amber-400' : 'text-red-400'}`}>
-                  {apiHealth === 'healthy' ? 'OPERATIONAL' : apiHealth === 'degraded' ? 'DEGRADED' : 'OFFLINE'}
+                <div className={`w-1.5 h-1.5 rounded-full ${(apiHealth || 'checking') === 'healthy' ? 'bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]' : (apiHealth || 'checking') === 'degraded' ? 'bg-amber-500' : 'bg-red-600'}`} />
+                <span className={`text-[10px] font-bold ${(apiHealth || 'checking') === 'healthy' ? 'text-cyan-400' : (apiHealth || 'checking') === 'degraded' ? 'text-amber-400' : 'text-red-400'}`}>
+                  {(apiHealth || 'checking') === 'healthy' ? 'OPERATIONAL' : (apiHealth || 'checking') === 'degraded' ? 'DEGRADED' : 'OFFLINE'}
                 </span>
               </div>
             </div>
@@ -213,9 +213,9 @@ export default function Dashboard() {
             <div className="flex flex-col gap-0.5">
               <span className="text-[8px] text-slate-500 uppercase font-black tracking-widest">NEXUS-AI</span>
               <div className="flex items-center gap-1.5 min-w-[70px]">
-                <div className={`w-1.5 h-1.5 rounded-full ${aiStatus === 'active' ? 'bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.6)]' : 'bg-slate-500'}`} />
-                <span className={`text-[10px] font-bold ${aiStatus === 'active' ? 'text-purple-400' : 'text-slate-400'}`}>
-                  {aiStatus === 'active' ? 'COGNITIVE' : 'STANDBY'}
+                <div className={`w-1.5 h-1.5 rounded-full ${(aiStatus || 'standby') === 'active' ? 'bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.6)]' : 'bg-slate-500'}`} />
+                <span className={`text-[10px] font-bold ${(aiStatus || 'standby') === 'active' ? 'text-purple-400' : 'text-slate-400'}`}>
+                  {(aiStatus || 'standby') === 'active' ? 'COGNITIVE' : 'STANDBY'}
                 </span>
               </div>
             </div>
@@ -257,7 +257,7 @@ export default function Dashboard() {
         </AnimatePresence>
 
         <Sidebar
-          events={events}
+          events={events || []}
           setEvents={setEvents}
           setWsStatus={setWsStatus}
           selectedEvent={selectedEvent}
@@ -266,7 +266,7 @@ export default function Dashboard() {
           onSuggestDispatch={handleSuggestDispatch}
           onClearRoute={handleClearRoute}
           onTriggerAI={handleTriggerAI}
-          userRole={user?.role}
+          userRole={user?.role || 'Guest'}
           activeRoute={activeRoute}
         />
 

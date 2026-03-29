@@ -97,13 +97,29 @@ const CitizenApp = () => {
             timer = setTimeout(checkHealth, nextInterval);
         };
 
+        const handleOnline = () => {
+            setBackendOnline(true);
+            addToast("Network connection restored.", "success");
+            flushSOSQueue();
+        };
+        const handleOffline = () => {
+            setBackendOnline(false);
+            setSystemStatus("down");
+            addToast("Network connection lost. Offline mode active.", "warning");
+        };
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
         checkHealth();
 
         return () => {
             isMounted = false;
             clearTimeout(timer);
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
         };
-    }, []);
+    }, [flushSOSQueue, addToast]);
 
     useEffect(() => {
         if (!backendOnline) {
@@ -168,8 +184,14 @@ const CitizenApp = () => {
         })
         .catch((err) => {
             setSending(false);
-            // SYNC STATUS: If the network actually failed right now, update the health badge immediately
-            if (err.message === "Failed to fetch") {
+            
+            // SYSTEM STABILITY: Broaden network error detection for instant status sync
+            const isNetworkError = !navigator.onLine || 
+                                 err.message.includes("fetch") || 
+                                 err.message.includes("NetworkError") ||
+                                 err.message.includes("Load failed");
+
+            if (isNetworkError) {
                 setBackendOnline(false);
                 setSystemStatus("down");
             }
@@ -178,7 +200,7 @@ const CitizenApp = () => {
             queue.push(payload);
             localStorage.setItem('nexus_sos_queue', JSON.stringify(queue));
             
-            const errorMsg = err.message === "Failed to fetch" 
+            const errorMsg = isNetworkError
                 ? "NO NETWORK: SOS secured in storage for auto-transmission."
                 : `SYSTEM ERROR: ${err.message}. Queued locally.`;
                 

@@ -455,10 +455,10 @@ const Sidebar = memo(function Sidebar({
                                                                 <motion.div 
                                                                     initial={{ width: 0 }}
                                                                     animate={{ 
-                                                                        width: event.status === 'Resolved' ? '100%' : 
-                                                                               event.status === 'In Progress' ? '75%' : 
-                                                                               event.status !== 'Pending' ? '50%' : 
-                                                                               (event.xai_breakdown ? '25%' : '0%') 
+                                                                        width: event?.status === 'Resolved' ? '100%' : 
+                                                                               event?.status === 'In Progress' ? '75%' : 
+                                                                               event?.status !== 'Pending' ? '50%' : 
+                                                                               (event?.xai_breakdown ? '25%' : '0%') 
                                                                     }}
                                                                     className="h-full bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500"
                                                                 />
@@ -466,10 +466,10 @@ const Sidebar = memo(function Sidebar({
 
                                                             {[
                                                                 { label: 'Signal', icon: '📡', active: true, done: true },
-                                                                { label: 'Logic', icon: '🧠', active: !!event.xai_breakdown, done: !!event.xai_breakdown },
-                                                                { label: 'Dispatch', icon: '⚡', active: event.status !== 'Pending', done: event.status !== 'Pending' },
-                                                                { label: 'Transit', icon: '🚑', active: event.status === 'In Progress', done: event.status === 'Resolved' },
-                                                                { label: 'Arrived', icon: '🏁', active: event.status === 'Resolved', done: event.status === 'Resolved' }
+                                                                { label: 'Logic', icon: '🧠', active: !!event?.xai_breakdown, done: !!event?.xai_breakdown },
+                                                                { label: 'Dispatch', icon: '⚡', active: event?.status !== 'Pending', done: event?.status !== 'Pending' },
+                                                                { label: 'Transit', icon: '🚑', active: event?.status === 'In Progress', done: event?.status === 'Resolved' },
+                                                                { label: 'Arrived', icon: '🏁', active: event?.status === 'Resolved', done: event?.status === 'Resolved' }
                                                             ].map((step, idx) => (
                                                                 <div key={idx} className="relative z-10 flex flex-col items-center gap-2">
                                                                     <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] transition-all duration-500 
@@ -492,7 +492,7 @@ const Sidebar = memo(function Sidebar({
                                                                 <BarChart2 size={12} className="text-cyan-400" />
                                                                 <span className="text-[10px] uppercase font-black text-slate-300 tracking-widest">AI Reasoning Breakdown</span>
                                                             </div>
-                                                            <span className="text-[10px] text-cyan-400 font-mono font-bold bg-cyan-400/10 px-1.5 rounded">REL: {((event.confidence_score || 0) * 100).toFixed(0)}%</span>
+                                                            <span className="text-[10px] text-cyan-400 font-mono font-bold bg-cyan-400/10 px-1.5 rounded">REL: {((event?.confidence_score || 0) * 100).toFixed(0)}%</span>
                                                         </div>
                                                         <div className="space-y-2 mb-2 pt-1">
                                                             {[
@@ -501,7 +501,7 @@ const Sidebar = memo(function Sidebar({
                                                                 { label: 'Weather', key: 'weather_contribution', color: 'bg-cyan-500', icon: '☁️' },
                                                                 { label: 'IoT Sensors', key: 'sensor_contribution', color: 'bg-amber-500', icon: '📡' }
                                                             ].map(item => {
-                                                                const val = event.xai_breakdown?.[item.key] ?? 
+                                                                const val = event?.xai_breakdown?.[item.key] ?? 
                                                                     (item.key === 'nlp_contribution' ? 40 : 
                                                                      item.key === 'vision_contribution' ? 30 : 
                                                                      item.key === 'weather_contribution' ? 20 : 10);
@@ -526,7 +526,7 @@ const Sidebar = memo(function Sidebar({
                                                         </div>
                                                         <p className="text-[9px] text-slate-500 font-medium leading-tight border-t border-white/5 pt-2 mt-1">
                                                             <span className="text-cyan-500 font-black mr-1">ANALYSIS:</span>
-                                                            Priority modulated by {event.category || 'Unknown'} baseline risk and multi-modal verification.
+                                                            Priority modulated by {event?.category || 'Unknown'} baseline risk and multi-modal verification.
                                                         </p>
                                                     </div>
 

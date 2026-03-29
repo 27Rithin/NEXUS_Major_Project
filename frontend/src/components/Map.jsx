@@ -91,7 +91,7 @@ function AnimatedRoute({ route, severity = 'LOW' }) {
     const map = useMap();
     const [progress, setProgress] = useState(0);
     const pathCoords = useMemo(() => 
-        (route.route_waypoints || route.path_geometry || []).map(p => [p.lat, p.lng]),
+        (route?.route_waypoints || route?.path_geometry || []).map(p => [p.lat, p.lng]),
     [route]);
     
     // Calculate total distance for display
