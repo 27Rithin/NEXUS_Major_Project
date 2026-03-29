@@ -45,7 +45,7 @@ const formatError = (error, defaultMessage) => {
 export const EventService = {
     getEvents: async () => {
         try {
-            const response = await api.get('/events/');
+            const response = await api.get('events/');
             return response.data;
         } catch (error) {
             throw formatError(error, "Failed to fetch active events");
@@ -54,7 +54,7 @@ export const EventService = {
 
     getRoute: async (eventId) => {
         try {
-            const response = await api.get(`/events/${eventId}/route`);
+            const response = await api.get(`events/${eventId}/route`);
             return response.data;
         } catch (error) {
             throw formatError(error, "Failed to fetch event route");
@@ -63,7 +63,7 @@ export const EventService = {
 
     triggerCrossModal: async (eventId) => {
         try {
-            const response = await api.post(`/events/${eventId}/cross-modal-trigger`);
+            const response = await api.post(`events/${eventId}/cross-modal-trigger`);
             return response.data;
         } catch (error) {
             throw formatError(error, "Failed to trigger cross-modal engine");
@@ -80,7 +80,7 @@ export const EventService = {
                 payload.override_lat = parseFloat(overrideLat);
                 payload.override_lng = parseFloat(overrideLng);
             }
-            const response = await api.post(`/events/${eventId}/dispatch`, payload);
+            const response = await api.post(`events/${eventId}/dispatch`, payload);
             return response.data;
         } catch (error) {
             throw formatError(error, "Failed to deploy unit");
@@ -94,7 +94,7 @@ export const EventService = {
                 dest_lat: parseFloat(destLat),
                 dest_lng: parseFloat(destLng)
             };
-            const response = await api.post(`/events/${eventId}/suggest-dispatch`, payload);
+            const response = await api.post(`events/${eventId}/suggest-dispatch`, payload);
             return response.data;
         } catch (error) {
             throw formatError(error, "Failed to suggest dispatch route");
@@ -105,7 +105,7 @@ export const EventService = {
 export const AgentService = {
     simulateSocialPost: async () => {
         try {
-            const response = await api.post('/agents/social/simulate');
+            const response = await api.post('agents/social/simulate');
             return response.data;
         } catch (error) {
             throw formatError(error, "Failed to simulate social media feed");
@@ -114,7 +114,7 @@ export const AgentService = {
 
     analyzeVision: async (eventId, imageUrl) => {
         try {
-            const response = await api.post(`/agents/vision/analyze/${eventId}`, null, {
+            const response = await api.post(`agents/vision/analyze/${eventId}`, null, {
                 params: { image_url: imageUrl }
             });
             return response.data;

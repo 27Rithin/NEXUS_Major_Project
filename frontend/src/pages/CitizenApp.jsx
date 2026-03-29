@@ -4,8 +4,19 @@ import { ShieldAlert, MapPin, Activity, Radio, VolumeX, CheckCircle2, AlertTrian
 import { useToast } from '../components/useToast';
 import { config } from '../config/env';
 import { useWebSocket } from '../hooks/useWebSocket';
+import api from '../services/api';
 
 const CitizenApp = () => {
+    // Initialize unique device_id from localStorage
+    const [deviceId] = useState(() => {
+        let id = localStorage.getItem('nexus_citizen_id');
+        if (!id) {
+            id = `DEVICE-APP-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+            localStorage.setItem('nexus_citizen_id', id);
+        }
+        return id;
+    });
+
     const MotionButton = motion.button;
     const MotionDiv = motion.div;
     const [sending, setSending] = useState(false);
@@ -27,15 +38,8 @@ const CitizenApp = () => {
 
         let successCount = 0;
         Promise.all(queue.map(payload => {
-            return fetch(`${config.API_URL}/ingestion/sos`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('nexus_token')}`
-                },
-                body: JSON.stringify(payload)
-            }).then(res => {
-                if(res.ok) successCount++;
+            return api.post('ingestion/sos', payload).then(res => {
+                successCount++;
             }).catch(() => {});
         })).then(() => {
             if (successCount > 0) {
@@ -172,22 +176,9 @@ const CitizenApp = () => {
             return;
         }
 
-        fetch(`${config.API_URL}/ingestion/sos`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        })
-        .then(async res => {
-            const data = await res.json();
-            if (!res.ok) {
-                if (res.status === 500) {
-                    addToast(`SERVER ERROR: ${data.detail || "Persistence failed"}. SOS queued locally.`, "error", 10000);
-                }
-                throw new Error(data.detail || "SOS Failed");
-            }
-            return data;
-        })
-        .then(data => {
+        api.post('ingestion/sos', payload)
+        .then(res => {
+            const data = res.data;
             setSending(false);
             if (!isSilent) {
                 setSosResponse(data);
@@ -208,11 +199,19 @@ const CitizenApp = () => {
         .catch((err) => {
             setSending(false);
             
+            // Extract error message from axios response if available
+            const detail = err.response?.data?.detail || err.message;
+            
+            if (err.response?.status === 429) {
+                addToast(`RATE LIMIT: ${detail}`, "warning", 8000);
+                return;
+            }
+
             // SYSTEM STABILITY: Broaden network error detection for instant status sync
             const isNetworkError = !navigator.onLine || 
-                                 err.message.includes("fetch") || 
-                                 err.message.includes("NetworkError") ||
-                                 err.message.includes("Load failed");
+                                 err.message.includes("network") || 
+                                 err.code === "ERR_NETWORK" ||
+                                 err.message.includes("timeout");
 
             if (isNetworkError) {
                 setBackendOnline(false);
@@ -225,7 +224,7 @@ const CitizenApp = () => {
             
             const errorMsg = isNetworkError
                 ? "NO NETWORK: SOS secured in storage for auto-transmission."
-                : `SYSTEM ERROR: ${err.message}. Queued locally.`;
+                : `SYSTEM ERROR: ${detail}. Queued locally.`;
                 
             if (!isSilent) addToast(errorMsg, "warning", 8000);
             if (isSilent && navigator.vibrate) navigator.vibrate(200);
@@ -271,7 +270,7 @@ const CitizenApp = () => {
                 lat: mockLat,
                 lng: mockLng,
                 description: "Emergency activated via Citizen App SOS",
-                device_id: "DEVICE-APP-998"
+                device_id: deviceId
             }, false);
         }, 1500);
     };

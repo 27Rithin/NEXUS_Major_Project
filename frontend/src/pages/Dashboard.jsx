@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import Sidebar from '../components/Sidebar';
 import NexusMap from '../components/Map';
-import { EventService, AgentService } from '../services/api';
+import { EventService, AgentService, default as api } from '../services/api';
 import { AuthContext } from '../contexts/AuthContextValue';
 import { LogOut, Activity, AlertOctagon, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,9 +16,10 @@ export default function Dashboard() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [activeRoute, setActiveRoute] = useState(null);
   const [wsStatus, setWsStatus] = useState('connecting'); // 'connecting', 'connected', 'disconnected'
-  const [apiHealth, setApiHealth] = useState('unknown'); // 'healthy', 'degraded', 'offline'
-  const [aiStatus, setAiStatus] = useState('active'); // 'active', 'busy', 'standby'
+  const [apiHealth, setApiHealth] = useState('unknown'); // 'healthy', 'waking_up', 'degraded', 'offline'
+  const [failCount, setFailCount] = useState(0);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [aiStatus, setAiStatus] = useState('standby');
   const { user, logout } = useContext(AuthContext);
   const { addToast } = useToast();
 
@@ -29,14 +30,27 @@ export default function Dashboard() {
       const latency = Date.now() - startTime;
       
       if (res.ok) {
-        setApiHealth(latency > 500 ? 'degraded' : 'healthy');
+        setFailCount(0); // Reset on success
+        // RENDER FREE TIER DETECTION: If latency is > 2s or it's the first hit, it's waking up
+        if (latency > 2000 && apiHealth === 'unknown') {
+          setApiHealth('waking_up');
+        } else {
+          setApiHealth(latency > 800 ? 'degraded' : 'healthy');
+        }
       } else {
-        setApiHealth('offline');
+        setFailCount(prev => prev + 1);
       }
     } catch {
+      setFailCount(prev => prev + 1);
+    }
+  }, [apiHealth]);
+
+  useEffect(() => {
+    // If we've failed 3 times in a row, then mark as offline
+    if (failCount >= 3) {
       setApiHealth('offline');
     }
-  }, []);
+  }, [failCount]);
 
   useEffect(() => {
     checkApiHealth();
@@ -60,8 +74,9 @@ export default function Dashboard() {
         }
       }
     } catch (error) {
-      setApiHealth('offline');
-      addToast(error.message || "TELEMETRY OFFLINE: Retrying connection...", "error");
+      // Don't flip to offline immediately on telemetry error; let health check handle it
+      console.warn("TELEMETRY DELAY:", error.message);
+      addToast("TELEMETRY LAG: Attempting background sync...", "warning");
     }
     setLoading(false);
   }, [addToast]);
@@ -148,15 +163,11 @@ export default function Dashboard() {
   const handleSimulateDisaster = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${config.API_URL}/ingestion/simulate?count=10`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('nexus_token')}` }
-      });
-      if (!res.ok) throw new Error("Simulation failed");
+      await api.post('ingestion/simulate?count=10');
       addToast(`Simulated 10 random disaster events.`, "success");
       await fetchEvents();
     } catch (error) {
-      addToast(error.message || "Failed to simulate events.", "error");
+      addToast(error.response?.data?.detail || error.message || "Failed to simulate events.", "error");
     }
     setLoading(false);
   };
@@ -200,9 +211,19 @@ export default function Dashboard() {
             <div className="flex flex-col gap-0.5">
               <span className="text-[8px] text-slate-500 uppercase font-black tracking-widest">API-CORE</span>
               <div className="flex items-center gap-1.5 min-w-[70px]">
-                <div className={`w-1.5 h-1.5 rounded-full ${(apiHealth || 'checking') === 'healthy' ? 'bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]' : (apiHealth || 'checking') === 'degraded' ? 'bg-amber-500' : 'bg-red-600'}`} />
-                <span className={`text-[10px] font-bold ${(apiHealth || 'checking') === 'healthy' ? 'text-cyan-400' : (apiHealth || 'checking') === 'degraded' ? 'text-amber-400' : 'text-red-400'}`}>
-                  {(apiHealth || 'checking') === 'healthy' ? 'OPERATIONAL' : (apiHealth || 'checking') === 'degraded' ? 'DEGRADED' : 'OFFLINE'}
+                <div className={`w-1.5 h-1.5 rounded-full ${
+                  (apiHealth || 'checking') === 'healthy' ? 'bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]' :
+                  (apiHealth || 'checking') === 'waking_up' ? 'bg-indigo-500 animate-pulse' :
+                  (apiHealth || 'checking') === 'degraded' ? 'bg-amber-500' : 'bg-red-600'
+                }`} />
+                <span className={`text-[10px] font-bold ${
+                  (apiHealth || 'checking') === 'healthy' ? 'text-cyan-400' :
+                  (apiHealth || 'checking') === 'waking_up' ? 'text-indigo-400 font-black' :
+                  (apiHealth || 'checking') === 'degraded' ? 'text-amber-400' : 'text-red-400'
+                }`}>
+                  {(apiHealth || 'checking') === 'healthy' ? 'OPERATIONAL' :
+                   (apiHealth || 'checking') === 'waking_up' ? 'WAKING UP...' :
+                   (apiHealth || 'checking') === 'degraded' ? 'DEGRADED' : 'OFFLINE'}
                 </span>
               </div>
             </div>

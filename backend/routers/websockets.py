@@ -37,7 +37,21 @@ async def websocket_endpoint(websocket: WebSocket, channel: str = "broadcast"):
     await manager.connect(websocket, channel)
     try:
         while True:
-            # Keep connection alive
-            await websocket.receive_text()
+            # Receive message and check if it's a heartbeat (PING)
+            # This is critical for keeping connections alive on Render/Nginx
+            data = await websocket.receive_text()
+            try:
+                message = json.loads(data)
+                if message.get("type") == "ping":
+                    # Send PONG reply with timestamp to verify round-trip
+                    await websocket.send_text(json.dumps({
+                        "type": "pong", 
+                        "timestamp": message.get("timestamp")
+                    }))
+            except (json.JSONDecodeError, AttributeError):
+                # Ignore non-JSON or malformed messages in the heartbeat loop
+                pass
     except WebSocketDisconnect:
+        manager.disconnect(websocket, channel)
+    except Exception:
         manager.disconnect(websocket, channel)

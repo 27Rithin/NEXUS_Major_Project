@@ -34,7 +34,10 @@ export const useWebSocket = (url, onMessage) => {
         socket.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
-                if (data.type === 'pong') return; // Ignore heartbeat responses
+                if (data.type === 'pong') {
+                    console.log(`[NEXUS-WS] Heartbeat OK: Server Pong received.`);
+                    return;
+                }
                 if (onMessage) onMessage(data);
             } catch (err) {
                 console.error('[NEXUS-WS] Payload Error:', err);

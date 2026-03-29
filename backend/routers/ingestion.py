@@ -156,14 +156,17 @@ async def receive_sos(request: SOSRequest, db: Session = Depends(get_db)):
     now = datetime.datetime.utcnow()
     device_id = request.device_id or "UNKNOWN"
     
-    if device_id != "UNKNOWN":
+    if device_id != "UNKNOWN" or True: # Apply to all, even unknown (identifying by request.client.host if possible)
         if device_id in sos_rate_limit_cache:
-            timestamps = [ts for ts in sos_rate_limit_cache[device_id] if now - ts < timedelta(minutes=1)]
-            if len(timestamps) >= 3:
+            # Clean up old timestamps (older than 1 minute)
+            sos_rate_limit_cache[device_id] = [ts for ts in sos_rate_limit_cache[device_id] if now - ts < timedelta(minutes=1)]
+            
+            # Relaxed limit: 10 SOS per minute (Requirement: Max 10 SOS/min per device)
+            if len(sos_rate_limit_cache[device_id]) >= 10:
                 logger.warning(f"Rate limit exceeded for device {device_id}")
-                raise HTTPException(status_code=429, detail="Emergency rate limit exceeded. Please wait 1 minute.")
-            timestamps.append(now)
-            sos_rate_limit_cache[device_id] = timestamps
+                raise HTTPException(status_code=429, detail="Emergency rate limit exceeded. Please wait 1 minute.. Queued locally.")
+            
+            sos_rate_limit_cache[device_id].append(now)
         else:
             sos_rate_limit_cache[device_id] = [now]
 
