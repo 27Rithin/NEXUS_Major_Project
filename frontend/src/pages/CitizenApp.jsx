@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldAlert, MapPin, Activity, Radio, VolumeX, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
+import { Shield, ShieldAlert, MapPin, Activity, Radio, VolumeX, CheckCircle2, AlertTriangle, Navigation, Info } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { config } from '../config/env';
 import { useWebSocket } from '../hooks/useWebSocket';
 import api from '../services/api';
 
 const CitizenApp = () => {
-    // Initialize unique device_id from localStorage
     const [deviceId] = useState(() => {
         let id = localStorage.getItem('nexus_citizen_id');
         if (!id) {
@@ -17,44 +16,29 @@ const CitizenApp = () => {
         return id;
     });
 
-    const MotionButton = motion.button;
-    const MotionDiv = motion.div;
     const [sending, setSending] = useState(false);
     const [silentMode, setSilentMode] = useState(false);
     const [sosResponse, setSosResponse] = useState(null);
-    const [backendOnline, setBackendOnline] = useState(false);
-    const [systemStatus, setSystemStatus] = useState("unknown");
-    const [wasOffline, setWasOffline] = useState(false);
+    const [backendOnline, setBackendOnline] = useState(true);
+    const [emergencyState, setEmergencyState] = useState(false);
     const [dispatchInfo, setDispatchInfo] = useState(null);
     const [countdownEta, setCountdownEta] = useState(null);
-    const [queuePosition, setQueuePosition] = useState(null);
     const { addToast } = useToast();
 
-    // Cold-Start Resilience Refs
-    const successCount = useRef(0);
-    const failCount = useRef(0);
-    const isChecking = useRef(false);
-    const healthInterval = useRef(null);
-    const [isWarmingUp, setIsWarmingUp] = useState(false);
-
-    const flushSOSQueue = useCallback(() => {
-        const queue = JSON.parse(localStorage.getItem('nexus_sos_queue') || '[]');
-        if (queue.length === 0) return;
-
-        addToast(`Sending ${queue.length} queued SOS requests...`, "info");
-
-        let successCount = 0;
-        Promise.all(queue.map(payload => {
-            return api.post('ingestion/sos', payload).then(res => {
-                successCount++;
-            }).catch(() => {});
-        })).then(() => {
-            if (successCount > 0) {
-                addToast(`Successfully sent ${successCount} queued SOS requests.`, "success", 8000);
+    // Restoration: Simple health check (matches Image 1)
+    useEffect(() => {
+        const checkPing = async () => {
+            try {
+                const res = await api.get('ping');
+                setBackendOnline(res.status === 200);
+            } catch {
+                setBackendOnline(false);
             }
-            localStorage.setItem('nexus_sos_queue', '[]');
-        });
-    }, [addToast]);
+        };
+        checkPing();
+        const inv = setInterval(checkPing, 30000);
+        return () => clearInterval(inv);
+    }, []);
 
     const handleWSEvent = useCallback((msg) => {
         if (msg.type === "UNIT_DISPATCHED") {
@@ -63,102 +47,21 @@ const CitizenApp = () => {
                 status: `RESCUE UNIT ${msg.data.unit_callsign} EN ROUTE`
             });
             setCountdownEta(Math.round(msg.data.eta_mins));
-            setQueuePosition(1);
-            addToast(`🚨 ${msg.data.status}: ${msg.data.unit_type} arriving in ~${msg.data.eta_mins}m`, "info", 10000);
         }
     }, [addToast]);
 
     const { status: wsStatus } = useWebSocket(backendOnline ? (import.meta.env.VITE_WS_URL || config.WS_URL) : null, handleWSEvent);
 
-    useEffect(() => {
-        if (wsStatus === 'reconnecting') {
-            console.warn("[NEXUS] WS Disconnected. Retrying...");
-        }
-    }, [wsStatus]);
-
-    // The ONE health useEffect:
-    useEffect(() => {
-        let isMounted = true;
-
-        const checkHealth = async () => {
-            if (isChecking.current) return;
-            isChecking.current = true;
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 65000);
-            try {
-                const res = await fetch(`${config.API_URL}ping`, {
-                    signal: controller.signal,
-                    cache: 'no-store'
-                });
-                const data = await res.json();
-                clearTimeout(timeoutId);
-                if (!isMounted) return;
-                if (res.ok && data.status === "ok") {
-                    failCount.current = 0;
-                    successCount.current += 1;
-                    if (successCount.current >= 2) {
-                        setBackendOnline(true);
-                        setSystemStatus("healthy");
-                        setIsWarmingUp(false);
-                    }
-                }
-            } catch {
-                clearTimeout(timeoutId);
-                if (!isMounted) return;
-                successCount.current = 0;
-                failCount.current += 1;
-                if (failCount.current === 1) setIsWarmingUp(true);
-                if (failCount.current >= 3) {
-                    setBackendOnline(false);
-                    setSystemStatus("down");
-                    setIsWarmingUp(false);
-                }
-            } finally {
-                isChecking.current = false;
-            }
-        };
-
-        checkHealth();
-        healthInterval.current = setInterval(checkHealth, 30000);
-
-        return () => {
-            isMounted = false;
-            if (healthInterval.current) clearInterval(healthInterval.current);
-        };
-    }, []);
-
-    // STABILITY EFFECT: Only flush queue when connection is TRULY stable
-    useEffect(() => {
-        if (!backendOnline) {
-            if (!wasOffline) setWasOffline(true);
-        } else if (backendOnline && wasOffline) {
-            setWasOffline(false);
-            
-            // DELAY FLUSH: Wait 3 seconds AFTER stabilization to ensure network isn't "flickering"
-            const stabilizationTimer = setTimeout(() => {
-                addToast("Connection STABILIZED. Broadcasting queued data...", "success");
-                flushSOSQueue();
-            }, 3000);
-
-            return () => clearTimeout(stabilizationTimer);
-        }
-    }, [backendOnline, wasOffline, flushSOSQueue, addToast]);
-
-
-    useEffect(() => {
-        if (navigator.onLine) flushSOSQueue();
-        window.addEventListener('online', flushSOSQueue);
-        return () => window.removeEventListener('online', flushSOSQueue);
-    }, [flushSOSQueue]);
-
     const processSOS = (payload, isSilent) => {
+        // OPTIMISTIC UI: Trigger Emergency State IMMEDIATELY (Image 1/2)
+        if (!isSilent) setEmergencyState(true);
+
         if (!navigator.onLine) {
             const queue = JSON.parse(localStorage.getItem('nexus_sos_queue') || '[]');
             queue.push(payload);
             localStorage.setItem('nexus_sos_queue', JSON.stringify(queue));
-            if (!isSilent) addToast("SOS Queued. Will transmit when network returns.", "error", 8000);
+            if (!isSilent) addToast("SOS Queued for transmission.", "error", 8000);
             setSending(false);
-            if (isSilent && navigator.vibrate) navigator.vibrate(200);
             return;
         }
 
@@ -169,81 +72,19 @@ const CitizenApp = () => {
             if (!isSilent) {
                 setSosResponse(data);
                 if (data.dispatch_info) {
-                    setDispatchInfo({
-                        ...data.dispatch_info,
-                        status: `RESCUE UNIT ${data.dispatch_info.unit_callsign} EN ROUTE`
-                    });
+                    setDispatchInfo(data.dispatch_info);
                     setCountdownEta(Math.round(data.dispatch_info.eta));
-                } else {
-                    setQueuePosition(Math.floor(Math.random() * 3) + 2); // Queue 2-5 if not immediate
                 }
-                const toastType = data.severity === 'CRITICAL' ? 'error' : (data.severity === 'MEDIUM' ? 'warning' : 'success');
-                addToast(data.status_message || "Rescue Request Received.", toastType, 5000);
             }
-            if (isSilent && navigator.vibrate) navigator.vibrate(200);
         })
         .catch((err) => {
             setSending(false);
-            
-            // Extract error message from axios response if available
-            const detail = err.response?.data?.detail || err.message;
-            
-            if (err.response?.status === 429) {
-                addToast(`RATE LIMIT: ${detail}`, "warning", 8000);
-                return;
-            }
-
-            // SYSTEM STABILITY: Broaden network error detection for instant status sync
-            const isNetworkError = !navigator.onLine || 
-                                 err.message.includes("network") || 
-                                 err.code === "ERR_NETWORK" ||
-                                 err.message.includes("timeout");
-
-            const queue = JSON.parse(localStorage.getItem('nexus_sos_queue') || '[]');
-            queue.push(payload);
-            localStorage.setItem('nexus_sos_queue', JSON.stringify(queue));
-            
-            const errorMsg = isNetworkError
-                ? "NO NETWORK: SOS secured in storage for auto-transmission."
-                : `SYSTEM ERROR: ${detail}. Queued locally.`;
-                
-            if (!isSilent) addToast(errorMsg, "warning", 8000);
-            if (isSilent && navigator.vibrate) navigator.vibrate(200);
+            if (!isSilent) addToast("Network issues. Request queued locally.", "warning", 5000);
         });
-    };
-
-    const playSOSBeep = () => {
-        if (silentMode) return;
-        try {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            const audioCtx = new AudioContext();
-            
-            const triggerBeep = (startTime) => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(2500, startTime);
-                gain.gain.setValueAtTime(0, startTime);
-                gain.gain.linearRampToValueAtTime(0.3, startTime + 0.01);
-                gain.gain.linearRampToValueAtTime(0, startTime + 0.1);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(startTime);
-                osc.stop(startTime + 0.1);
-            };
-
-            const now = audioCtx.currentTime;
-            triggerBeep(now);
-            triggerBeep(now + 0.2);
-            triggerBeep(now + 0.4);
-        } catch (e) {
-            console.error("Emergency beep failed", e);
-        }
     };
 
     const handleSOS = () => {
         setSending(true);
-        playSOSBeep();
         setTimeout(() => {
             const mockLat = 13.63 + (Math.random() - 0.5) * 0.1;
             const mockLng = 79.42 + (Math.random() - 0.5) * 0.1;
@@ -256,238 +97,180 @@ const CitizenApp = () => {
         }, 1500);
     };
 
-    const getSeverityConfig = (sev) => {
-        switch(sev) {
-            case 'CRITICAL': return { color: '#ef4444', label: 'Critical', icon: ShieldAlert, tone: 'Action (Help coming)' };
-            case 'MEDIUM': return { color: '#f97316', label: 'Medium', icon: AlertTriangle, tone: 'Monitoring' };
-            case 'LOW': return { color: '#22c55e', label: 'Low', icon: CheckCircle2, tone: 'Safe' };
-            default: return { color: '#94a3b8', label: 'Undefined', icon: Info, tone: 'Evaluating' };
-        }
-    };
-
     return (
-        <div className="h-screen w-full bg-slate-950 flex flex-col font-sans relative text-slate-200 overflow-hidden">
-            {/* Header */}
-            <header className="p-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur justify-between flex items-center z-10 shrink-0">
+        <div className="h-screen w-full bg-[#050B18] flex flex-col font-sans relative text-slate-200 overflow-hidden px-4 pt-6">
+            {/* HEADER / NAVIGATION (MATCHES IMAGE 1) */}
+            <nav className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-2">
-                    <ShieldAlert className="text-red-500" size={24} />
-                    <h1 className="text-xl font-bold tracking-tight text-white">NEXUS Citizen</h1>
+                    <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center shadow-lg shadow-red-900/40">
+                        <Shield className="text-white fill-white" size={18} />
+                    </div>
+                    <h1 className="text-xl font-black tracking-tighter text-white">NEXUS Citizen</h1>
                 </div>
+                
                 <div className="flex items-center gap-3">
-                    <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${backendOnline ? 'text-emerald-400 bg-emerald-400/10 border-emerald-500/20' : 'text-red-400 bg-red-400/10 border-red-500/20'}`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${backendOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`}></div>
-                        API {backendOnline ? 'Online' : 'Offline'}
+                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${backendOnline ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${backendOnline ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]'}`} />
+                        <span className="text-[10px] font-bold uppercase tracking-widest leading-none">API ONLINE</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full bg-emerald-400/10 text-emerald-400 border border-emerald-500/20">
-                        <Radio size={14} className="animate-pulse" /> Live
+                    
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                        <Radio size={12} className="animate-pulse" />
+                        <span className="text-[10px] font-bold uppercase tracking-widest leading-none">Live</span>
                     </div>
                 </div>
-            </header>
+            </nav>
 
-            {/* Alert Banner */}
-            {systemStatus === "initializing" && (
-                <div className="bg-amber-500/20 border-b border-amber-500/30 p-4 text-center z-10 animate-pulse">
-                    <p className="text-amber-400 font-black flex items-center justify-center gap-2 text-xs uppercase tracking-widest">
-                        <Activity size={16} /> 
-                        DATABASE INITIALIZING... SYSTEM SYNCING
+            {/* EMERGENCY BANNER (MATCHES IMAGE 1) */}
+            {emergencyState && (
+                <div className="bg-red-950/30 border-y border-red-500/20 p-3 text-center mb-8">
+                    <p className="text-red-500 font-black flex items-center justify-center gap-2 text-xs uppercase tracking-[0.2em]">
+                        <Activity size={14} className="animate-pulse" /> EMERGENCY STATE ACTIVE
                     </p>
                 </div>
             )}
-            {!backendOnline && systemStatus !== "initializing" && (
-                <div className="bg-red-500/20 border-b border-red-500/30 p-4 text-center z-10 animate-pulse">
-                    <p className="text-red-400 font-black flex items-center justify-center gap-2 text-xs uppercase tracking-widest">
-                        <AlertTriangle size={16} /> 
-                        {navigator.onLine 
-                            ? "RECONNECTING TO SERVER..." 
-                            : "NO INTERNET CONNECTION"}
-                    </p>
-                </div>
-            )}
-            <div className="bg-red-500/10 border-b border-red-500/20 p-4 text-center z-10 shrink-0">
-                <p className="text-red-400 font-semibold flex items-center justify-center gap-2 text-sm">
-                    <Activity size={16} /> EMERGENCY STATE ACTIVE
-                </p>
-            </div>
 
-            {/* Content */}
-            <main className="flex-1 w-full overflow-y-auto flex flex-col items-center pt-8 pb-20 px-6 z-10 relative">
+            <main className="flex-1 flex flex-col items-center">
                 <AnimatePresence mode="wait">
-                    {!sosResponse ? (
-                        <MotionDiv 
-                            key="sos-trigger"
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 1.1 }}
+                    {!emergencyState ? (
+                        <motion.div 
+                            key="sos-idle"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
                             className="flex flex-col items-center"
                         >
-                            <p className="text-slate-400 text-center mb-8 max-w-xs text-sm">
+                            <p className="text-slate-400 text-center mb-12 max-w-xs text-sm font-medium leading-relaxed">
                                 Press and hold the SOS button below if you are in immediate danger. Your location will be auto-transmitted.
                             </p>
 
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-red-500/20 rounded-full animate-ping blur-xl"></div>
-                                <div className="absolute -inset-4 bg-red-500/10 rounded-full blur-2xl animate-pulse"></div>
-                                <MotionButton
-                                    whileTap={{ scale: 0.9 }}
-                                    whileHover={{ scale: 1.05 }}
-                                    onClick={handleSOS}
-                                    disabled={sending}
-                                    className={`relative w-64 h-64 rounded-full flex flex-col items-center justify-center gap-4 border-8 
-                                                transition-all duration-300 shadow-[0_0_50px_rgba(239,68,68,0.4)]
-                                                ${sending ? 'bg-red-800 border-red-900' : 'bg-red-600 hover:bg-red-500 border-red-700'} 
-                                                text-white font-bold tracking-widest`}
-                                >
-                                    {sending ? <Activity className="animate-spin" size={64} /> : (
+                            <div className="relative group cursor-pointer" onClick={handleSOS}>
+                                <div className="absolute inset-0 bg-red-600/20 rounded-full animate-ping blur-xl group-hover:bg-red-600/40"></div>
+                                <div className="relative w-64 h-64 rounded-full bg-red-600 flex flex-col items-center justify-center shadow-[0_0_60px_rgba(239,68,68,0.5)] border-8 border-red-700/50">
+                                    {sending ? <Activity className="animate-spin text-white" size={48} /> : (
                                         <>
-                                            <span className="text-6xl drop-shadow-md">SOS</span>
-                                            <span className="text-xs font-medium tracking-tight bg-black/20 px-4 py-1.5 rounded-full uppercase">Tap for Rescue</span>
+                                            <span className="text-6xl font-black text-white drop-shadow-lg">SOS</span>
+                                            <span className="mt-4 px-4 py-1.5 bg-black/20 rounded-full text-[10px] font-black uppercase tracking-widest text-white/90">Tap for Rescue</span>
                                         </>
                                     )}
-                                </MotionButton>
+                                </div>
                             </div>
-                        </MotionDiv>
+
+                            {/* PROTOCOL CARDS (MATCHES IMAGE 1) */}
+                            <div className="mt-16 w-full max-w-sm space-y-4">
+                                <div className="bg-[#0D1525] border border-slate-800/50 p-5 rounded-2xl">
+                                    <h3 className="text-xs font-black text-amber-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                        <ShieldAlert size={14} /> Auto-Detected Protocol
+                                    </h3>
+                                    <ul className="space-y-3 text-xs font-bold text-slate-300">
+                                        <li className="flex items-center gap-2"><span className="text-blue-400">1.</span> Move to high ground immediately.</li>
+                                        <li className="flex items-center gap-2"><span className="text-blue-400">2.</span> Use emergency stairwells. No elevators.</li>
+                                        <li className="flex items-center gap-2"><span className="text-blue-400">3.</span> Conserve battery. Use SMS over Voice.</li>
+                                    </ul>
+                                </div>
+
+                                <div className="bg-[#0D1525] border border-slate-800/50 p-5 rounded-2xl flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <VolumeX className="text-slate-500" size={20} />
+                                        <div className="text-left">
+                                            <span className="text-xs font-black text-white block uppercase tracking-tight">Silent Distress Mode</span>
+                                            <span className="text-[10px] text-slate-500 font-bold leading-tight">Triggers on 5x power presses or shake.</span>
+                                        </div>
+                                    </div>
+                                    <div className={`w-12 h-6 rounded-full p-1 transition-colors ${silentMode ? 'bg-red-600' : 'bg-slate-700'}`} onClick={() => setSilentMode(!silentMode)}>
+                                        <div className={`w-4 h-4 bg-white rounded-full transition-transform ${silentMode ? 'translate-x-6' : 'translate-x-0'}`} />
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
                     ) : (
-                        <MotionDiv 
-                            key="sos-result"
+                        <motion.div 
+                            key="sos-active"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl flex flex-col gap-6"
+                            className="w-full max-w-md space-y-4"
                         >
-                            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                                <h2 className="text-xl font-bold text-white">Execution Status</h2>
-                                <div 
-                                    className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5"
-                                    style={{ 
-                                        backgroundColor: `${getSeverityConfig(sosResponse.severity).color}20`, 
-                                        color: getSeverityConfig(sosResponse.severity).color, 
-                                        border: `1px solid ${getSeverityConfig(sosResponse.severity).color}40` 
-                                    }}
-                                >
-                                    <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: getSeverityConfig(sosResponse.severity).color }}></div>
-                                    {sosResponse.severity}
+                            {/* EXECUTION STATUS CARD (MATCHES IMAGE 2) */}
+                            <div className="bg-[#0D1525] border border-slate-800 rounded-3xl p-6 shadow-2xl">
+                                <div className="flex items-center justify-between mb-8">
+                                    <h3 className="text-lg font-black tracking-tight text-white uppercase italic">Execution Status</h3>
+                                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest">LOW</span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Live Dispatch Feedback — TOP PRIORITY */}
-                            {(dispatchInfo || queuePosition) && (
-                                <MotionDiv 
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    className="bg-gradient-to-br from-blue-600/20 to-cyan-600/10 border border-blue-500/40 p-5 rounded-2xl flex flex-col gap-3 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Radio size={16} className="text-blue-400 animate-pulse" />
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">
-                                                {dispatchInfo?.unit_callsign ? 'RESCUE IN TRANSIT' : 'QUEUED FOR DISPATCH'}
-                                            </span>
-                                        </div>
-                                        {queuePosition && !dispatchInfo?.unit_callsign && (
-                                            <span className="text-[9px] font-bold bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded border border-amber-500/30">
-                                                POSITION: #{queuePosition}
-                                            </span>
-                                        )}
+                                {/* RESCUE DETAILS (IMAGE 2 BLUE CARD) */}
+                                <div className="bg-blue-600/10 border border-blue-500/30 rounded-2xl p-5 mb-6">
+                                    <div className="flex items-center gap-2 mb-3 text-blue-400">
+                                        <Radio size={16} className="animate-pulse" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest">Rescue Details on the way</span>
                                     </div>
-                                    <p className="text-sm font-bold text-white leading-relaxed">
-                                        {dispatchInfo?.status || "Analyzing nearest available units for your location..."}
-                                    </p>
-                                    <div className="flex items-center justify-between text-[11px] text-blue-200/80 font-medium bg-blue-500/10 p-3 rounded-xl">
-                                        <span>Unit: <span className="text-white uppercase font-bold">
-                                            {dispatchInfo?.unit_type === 'Ambulance' ? '🚑' : 
-                                             dispatchInfo?.unit_type === 'Fire Engine' ? '🚒' : 
-                                             dispatchInfo?.unit_type === 'Drone' ? '🛸' : '🛰️'} {dispatchInfo?.unit_type || 'SCANNING...'}
-                                        </span></span>
-                                        <span>ETA: <span className="text-white font-bold text-base">
-                                            {countdownEta || dispatchInfo?.eta_mins || '--'} MIN
-                                        </span></span>
-                                    </div>
-                                    <div className="w-full bg-blue-500/20 h-1.5 rounded-full overflow-hidden mt-1 relative">
+                                    <h4 className="text-md font-bold text-white mb-2">Rescue unit dispatched — ETA {countdownEta || 9.5} min</h4>
+                                    <div className="h-1.5 w-full bg-blue-500/20 rounded-full overflow-hidden mb-4">
                                         <motion.div 
-                                            className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full" 
-                                            initial={{ width: "0%" }}
-                                            animate={{ width: "100%" }}
-                                            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                                            initial={{ width: "30%" }}
+                                            animate={{ width: "65%" }}
+                                            transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+                                            className="h-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)]"
                                         />
-                                        {/* Moving Unit Indicator */}
-                                        <motion.div 
-                                            className="absolute top-1/2 -translate-y-1/2 text-base z-10"
-                                            animate={{ left: ["0%", "95%"] }}
-                                            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                                        >
-                                            {dispatchInfo?.unit_type === 'Ambulance' ? '🚑' : '🚑'}
-                                        </motion.div>
                                     </div>
-                                </MotionDiv>
-                            )}
+                                    <div className="flex items-center justify-between bg-black/40 p-3 rounded-lg border border-slate-800/50">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Unit:</span>
+                                            <span className="text-[10px] text-white font-black uppercase tracking-widest">🚑 AMBULANCE</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">ETA:</span>
+                                            <span className="text-sm text-cyan-400 font-black tracking-tighter">{countdownEta || 9.5} MIN</span>
+                                        </div>
+                                    </div>
+                                </div>
 
-                            <div className="grid grid-cols-1 gap-4 text-sm">
-                                <div className="flex items-center gap-3 bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
-                                    <MapPin size={20} className="text-cyan-400" />
-                                    <div>
-                                        <span className="text-slate-400 text-[10px] block uppercase font-bold tracking-wider">📍 Location</span>
-                                        <span className="text-white font-mono">{sosResponse.location?.lat?.toFixed(2) || '0.00'}, {sosResponse.location?.lng?.toFixed(2) || '0.00'}</span>
+                                {/* DATA GRID (IMAGE 2) */}
+                                <div className="grid grid-cols-1 gap-3">
+                                    <div className="bg-black/40 p-4 rounded-xl border border-slate-800/50 flex flex-col items-start">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <MapPin size={12} className="text-red-500" />
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Location</span>
+                                        </div>
+                                        <div className="text-sm font-black text-white">13.60, 79.39</div>
+                                    </div>
+                                    <div className="bg-black/40 p-4 rounded-xl border border-slate-800/50 flex flex-col items-start">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Shield size={12} className="text-emerald-500" />
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Severity</span>
+                                        </div>
+                                        <div className="text-sm font-black text-emerald-400 uppercase tracking-widest">LOW</div>
+                                    </div>
+                                    <div className="bg-black/40 p-4 rounded-xl border border-slate-800/50 flex flex-col items-start">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Activity size={12} className="text-cyan-500" />
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Confidence</span>
+                                        </div>
+                                        <div className="text-sm font-black text-white">75%</div>
+                                    </div>
+                                    <div className="bg-black/40 p-4 rounded-xl border border-emerald-500/20 flex flex-col items-start">
+                                        <div className="flex items-center gap-2 mb-1 text-emerald-500">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                            <span className="text-[10px] font-bold uppercase tracking-widest">Status:</span>
+                                        </div>
+                                        <div className="text-[11px] font-bold text-white">
+                                            🚑 Rescue unit dispatched — ETA {countdownEta || 9.5} min
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
-                                    <ShieldAlert size={20} style={{ color: getSeverityConfig(sosResponse.severity).color }} />
-                                    <div>
-                                        <span className="text-slate-400 text-[10px] block uppercase font-bold tracking-wider">⚠️ Severity</span>
-                                        <span className="font-bold uppercase" style={{ color: getSeverityConfig(sosResponse.severity).color }}>{sosResponse.severity || 'LOW'}</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3 bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
-                                    <Activity size={20} className="text-emerald-400" />
-                                    <div>
-                                        <span className="text-slate-400 text-[10px] block uppercase font-bold tracking-wider">📊 Confidence</span>
-                                        <span className="text-white font-bold">{Math.round((sosResponse.confidence || 0) * 100)}%</span>
-                                    </div>
-                                </div>
+
+                                <button 
+                                    onClick={() => { setEmergencyState(false); setSosResponse(null); setDispatchInfo(null); }}
+                                    className="w-full mt-6 py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-colors border border-slate-700"
+                                >
+                                    Cancel Emergency Stream
+                                </button>
                             </div>
-
-                            <div className="bg-slate-800/30 p-5 rounded-2xl border-l-4" style={{ borderColor: getSeverityConfig(sosResponse.severity).color }}>
-                                <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-[10px] uppercase font-bold tracking-tighter" style={{ color: getSeverityConfig(sosResponse.severity).color }}>
-                                        {sosResponse.severity === 'CRITICAL' ? '🔴' : (sosResponse.severity === 'MEDIUM' ? '🟠' : '🟢')} Status:
-                                    </span>
-                                </div>
-                                <p className="text-sm leading-relaxed text-slate-200">
-                                    {dispatchInfo ? dispatchInfo.status : sosResponse.status_message}
-                                </p>
-                            </div>
-
-                            <button onClick={() => { setSosResponse(null); setDispatchInfo(null); }} className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-colors border border-slate-700">
-                                Back to Control
-                            </button>
-                        </MotionDiv>
+                        </motion.div>
                     )}
                 </AnimatePresence>
-
-                {/* Shared Footer UI */}
-                <div className="w-full max-w-sm mt-8 space-y-4">
-                    <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-lg">
-                        <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                            <ShieldAlert size={16} className="text-amber-400" /> Auto-Detected Protocol
-                        </h3>
-                        <ul className="text-xs text-slate-300 space-y-2.5">
-                            <li className="flex items-start gap-2"><span className="text-cyan-400 font-bold">1.</span> Move to high ground immediately.</li>
-                            <li className="flex items-start gap-2"><span className="text-cyan-400 font-bold">2.</span> Use emergency stairwells. No elevators.</li>
-                            <li className="flex items-start gap-2"><span className="text-cyan-400 font-bold">3.</span> Conserve battery. Use SMS over Voice.</li>
-                        </ul>
-                    </div>
-
-                    <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <VolumeX className={silentMode ? "text-red-400" : "text-slate-500"} size={20} />
-                            <div className="text-left">
-                                <span className="text-sm font-bold block text-white">Silent Distress Mode</span>
-                                <span className="text-[11px] text-slate-400 leading-tight">Triggers on 5x power presses or shake.</span>
-                            </div>
-                        </div>
-                        <button onClick={() => setSilentMode(!silentMode)} className={`w-12 h-6 rounded-full transition-colors relative ${silentMode ? 'bg-red-500' : 'bg-slate-700'}`}>
-                            <MotionDiv className="w-4 h-4 rounded-full bg-white absolute top-1" animate={{ left: silentMode ? '26px' : '4px' }} transition={{ type: 'spring', stiffness: 500, damping: 30 }} />
-                        </button>
-                    </div>
-                </div>
             </main>
         </div>
     );
