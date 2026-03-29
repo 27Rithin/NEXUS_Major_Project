@@ -24,15 +24,18 @@ export default function Dashboard() {
   const { addToast } = useToast();
 
   const checkApiHealth = useCallback(async () => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
     try {
       const startTime = Date.now();
-      // Ensure we don't have double slashes if API_URL ends in /
       const healthUrl = `${config.API_URL.replace(/\/+$/, '')}/health`;
-      const res = await fetch(healthUrl);
+      const res = await fetch(healthUrl, { signal: controller.signal });
       const latency = Date.now() - startTime;
+      clearTimeout(timeoutId);
       
       if (res.ok) {
-        setFailCount(0); // Reset on success
+        setFailCount(0);
         if (latency > 2500 && apiHealth === 'unknown') {
           setApiHealth('waking_up');
         } else {
@@ -42,6 +45,7 @@ export default function Dashboard() {
         setFailCount(prev => prev + 1);
       }
     } catch {
+      clearTimeout(timeoutId);
       setFailCount(prev => prev + 1);
     }
   }, [apiHealth]);

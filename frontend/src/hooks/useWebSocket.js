@@ -23,12 +23,12 @@ export const useWebSocket = (url, onMessage) => {
             setStatus('connected');
             reconnectAttempts.current = 0;
             
-            // Start Hearbeat (PING every 25s to keep proxy connections alive)
+            // Start Heartbeat (PING every 20s to keep proxy connections alive)
             heartbeatInterval.current = setInterval(() => {
                 if (socket.readyState === WebSocket.OPEN) {
                     socket.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
                 }
-            }, 25000);
+            }, 20000);
         };
 
         socket.onmessage = (event) => {

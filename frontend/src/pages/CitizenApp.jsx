@@ -76,12 +76,15 @@ const CitizenApp = () => {
         let successCount = 0; // STABILITY GUARD: Track consecutive successes
 
         const checkHealth = async () => {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
+
             try {
                 const startTime = Date.now();
-                // config.API_URL now ends in '/', so we use 'health' directly
-                const res = await fetch(`${config.API_URL}health`);
+                const res = await fetch(`${config.API_URL}health`, { signal: controller.signal });
                 const data = await res.json();
                 const latency = Date.now() - startTime;
+                clearTimeout(timeoutId);
 
                 if (!isMounted) return;
 
@@ -89,22 +92,26 @@ const CitizenApp = () => {
                     successCount++;
                     failCount = 0;
                     
-                    // RENDER FREE TIER DETECTION: If latency is high, it's waking up
                     if (latency > 2500 && systemStatus === 'unknown') {
                         setSystemStatus("initializing");
-                    } else if (successCount >= 1) { // Faster stabilization
+                    } else if (successCount >= 3) { // Require 3 stable pings
                         if (!backendOnline) setBackendOnline(true);
                         setSystemStatus("healthy");
                     }
                 } else {
                     successCount = 0;
                     failCount++;
+                    if (failCount >= 3) {
+                        setBackendOnline(false);
+                        setSystemStatus("down");
+                    }
                 }
             } catch (err) {
+                clearTimeout(timeoutId);
                 if (!isMounted) return;
                 successCount = 0;
-                // Don't flip to offline immediately; allow 3 fails for transient blips
                 failCount++;
+                // Grace period: allow 3 fails before declaring 'Offline'
                 if (failCount >= 3) {
                     setBackendOnline(false);
                     setSystemStatus("down");
