@@ -14,22 +14,13 @@ app = FastAPI(
     description="Backend API for NEXUS Disaster Response system",
     version="1.0.0"
 )
-app.router.redirect_slashes = False
+app.router.redirect_slashes = True
 
 # -------------------- CORS --------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:5175",
-        "http://127.0.0.1:5175"
-    ],
-    allow_origin_regex=r"https://.*\.onrender\.com",
+    allow_origins=["*"], # For stabilization, allow all; can restrict after successful demo
+    allow_origin_regex=r"https?://.*\.onrender\.com",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,6 +30,11 @@ app.add_middleware(
 @app.get("/")
 def read_root():
     return {"message": "Welcome to NEXUS Disaster Response API"}
+
+@app.get("/api/ping")
+def ping():
+    """Fastest possible handshake for connectivity tracking."""
+    return {"status": "ok"}
 
 @app.get("/api/health")
 def health_check():

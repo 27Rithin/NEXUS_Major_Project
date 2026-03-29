@@ -29,12 +29,13 @@ export default function Dashboard() {
 
     try {
       const startTime = Date.now();
-      const healthUrl = `${config.API_URL.replace(/\/+$/, '')}/health`;
-      const res = await fetch(healthUrl, { signal: controller.signal });
+      const pingUrl = `${config.API_URL.replace(/\/+$/, '')}/ping`;
+      const res = await fetch(pingUrl, { signal: controller.signal });
+      const data = await res.json();
       const latency = Date.now() - startTime;
       clearTimeout(timeoutId);
       
-      if (res.ok) {
+      if (res.ok && data.status === 'ok') {
         setFailCount(0);
         if (latency > 2500 && apiHealth === 'unknown') {
           setApiHealth('waking_up');

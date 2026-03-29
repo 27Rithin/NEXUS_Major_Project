@@ -81,14 +81,15 @@ const CitizenApp = () => {
 
             try {
                 const startTime = Date.now();
-                const res = await fetch(`${config.API_URL}health`, { signal: controller.signal });
+                // USE PING: Fast handshake for UI status indicator
+                const res = await fetch(`${config.API_URL}ping`, { signal: controller.signal });
                 const data = await res.json();
                 const latency = Date.now() - startTime;
                 clearTimeout(timeoutId);
 
                 if (!isMounted) return;
 
-                if (res.ok && data.status === "healthy") {
+                if (res.ok && data.status === "ok") {
                     successCount++;
                     failCount = 0;
                     

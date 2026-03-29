@@ -14,19 +14,23 @@ if (!rawUrl) {
     baseApiUrl = defaultApiUrl;
 } else if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
     // Already a full URL — use it directly, just ensure /api suffix
+    // Ensure baseApiUrl ends clean without a trailing slash first
     baseApiUrl = rawUrl.replace(/\/+$/, '');
-    if (!baseApiUrl.endsWith('/api')) {
-        baseApiUrl = `${baseApiUrl}/api`;
+
+    // If it's already a full URL (http or https), use it then append /api/ if missing
+    if (baseApiUrl.startsWith('http://') || baseApiUrl.startsWith('https://')) {
+        if (!baseApiUrl.endsWith('/api')) {
+            baseApiUrl = `${baseApiUrl}/api/`;
+        } else {
+            baseApiUrl = `${baseApiUrl}/`;
+        }
+    } else {
+        // Bare hostname logic
+        if (!baseApiUrl.includes('.')) {
+            baseApiUrl = `${baseApiUrl}.onrender.com`;
+        }
+        baseApiUrl = `https://${baseApiUrl}/api/`;
     }
-    // ADD TRAILING SLASH: Essential for Axios relative path resolution
-    baseApiUrl = `${baseApiUrl}/`;
-} else {
-    // Bare hostname (e.g., "nexus-backend" or "nexus-backend.onrender.com")
-    // Add .onrender.com suffix if it's a Render internal hostname with no TLD
-    if (!rawUrl.includes('.')) {
-        rawUrl = `${rawUrl}.onrender.com`;
-    }
-    baseApiUrl = `https://${rawUrl}/api/`;
 }
 
 // Automatically construct WebSocket URL from API URL
