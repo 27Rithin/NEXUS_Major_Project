@@ -69,42 +69,58 @@ const CitizenApp = () => {
         let isMounted = true;
         let timer;
         let failCount = 0;
+        let successCount = 0; // STABILITY GUARD: Track consecutive successes
 
         const checkHealth = async () => {
             try {
+                // Perform a deep health check
                 const res = await fetch(`${config.API_URL}/health`);
                 const data = await res.json();
 
                 if (!isMounted) return;
 
-                setBackendOnline(data.status === "healthy");
-                setSystemStatus(data.status); // New state for deep health
-                
                 if (data.status === "healthy") {
+                    successCount++;
                     failCount = 0;
+                    
+                    // ONLY declare ONLINE if we have at least 2 consecutive successful pings
+                    // This prevents "Flicker/Flap" loops during bad 4G/Wifi
+                    if (successCount >= 2) {
+                        if (!backendOnline) {
+                            console.log("Network stabilized. Restoring operations.");
+                            setBackendOnline(true);
+                        }
+                        setSystemStatus("healthy");
+                    }
                 } else {
+                    successCount = 0;
                     failCount++;
                 }
             } catch {
                 if (!isMounted) return;
+                successCount = 0;
                 setBackendOnline(false);
                 setSystemStatus("down");
                 failCount++;
             }
 
-            // True exponential backoff: 5s, 10s, 20s, 30s
+            // True exponential backoff for checking: 5s, 10s, 20s, 30s
+            // If we are currently failing, check less often to save battery/bandwidth
             const nextInterval = Math.min(5000 * Math.pow(2, failCount), 30000);
             timer = setTimeout(checkHealth, nextInterval);
         };
 
         const handleOnline = () => {
-            setBackendOnline(true);
-            addToast("Network connection restored.", "success");
-            flushSOSQueue();
+            // Don't just trust the OS "Online" event immediately.
+            // Reset counts and trigger a health check to verify manually.
+            successCount = 0;
+            checkHealth();
         };
+
         const handleOffline = () => {
             setBackendOnline(false);
             setSystemStatus("down");
+            successCount = 0;
             addToast("Network connection lost. Offline mode active.", "warning");
         };
 
@@ -119,17 +135,24 @@ const CitizenApp = () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
         };
-    }, [flushSOSQueue, addToast]);
+    }, [addToast, backendOnline]); // Removed redundant flushSOSQueue dependency
 
+    // STABILITY EFFECT: Only flush queue when connection is TRULY stable
     useEffect(() => {
         if (!backendOnline) {
             if (!wasOffline) setWasOffline(true);
         } else if (backendOnline && wasOffline) {
-            addToast("Connection restored. System back online.", "success");
             setWasOffline(false);
-            flushSOSQueue(); // Flush queue as soon as API is back
+            
+            // DELAY FLUSH: Wait 3 seconds AFTER stabilization to ensure network isn't "flickering"
+            const stabilizationTimer = setTimeout(() => {
+                addToast("Connection STABILIZED. Broadcasting queued data...", "success");
+                flushSOSQueue();
+            }, 3000);
+
+            return () => clearTimeout(stabilizationTimer);
         }
-    }, [addToast, backendOnline, wasOffline, flushSOSQueue]);
+    }, [backendOnline, wasOffline, flushSOSQueue, addToast]);
 
 
     useEffect(() => {
