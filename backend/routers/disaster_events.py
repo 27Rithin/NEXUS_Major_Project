@@ -27,7 +27,11 @@ from utils.spatial import create_point, create_linestring
 import logging
 from geoalchemy2.shape import to_shape
 
+import os
 logger = logging.getLogger(__name__)
+
+DEFAULT_LAT = float(os.getenv("DEFAULT_LAT", 13.6288))
+DEFAULT_LNG = float(os.getenv("DEFAULT_LNG", 79.4192))
 
 router = APIRouter()
 
@@ -45,7 +49,7 @@ def get_all_events(skip: int = 0, limit: int = 100, db: Session = Depends(get_db
             "title": event.title or "Untitled Incident",
             "description": event.description or "No description provided",
             "category": event.category or "Default",
-            "location": {"lng": float(point.x), "lat": float(point.y)} if point else {"lat": 13.6288, "lng": 79.4192},
+            "location": {"lng": float(point.x), "lat": float(point.y)} if point else {"lat": DEFAULT_LAT, "lng": DEFAULT_LNG},
             "social_nlp_score": float(event.social_nlp_score or 0.0),
             "priority_score": float(event.priority_score or 0.0),
             "confidence_score": float(event.confidence_score or 0.0),

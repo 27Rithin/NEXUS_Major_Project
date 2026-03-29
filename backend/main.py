@@ -148,32 +148,46 @@ async def startup_event():
     ADMIN_EMAIL = "rishirithin@gmail.com"
     ADMIN_PASSWORD = settings.ADMIN_PASSWORD
 
-    db = SessionLocal()
-    try:
-        admin = db.query(models.User).filter(models.User.email == ADMIN_EMAIL).first()
+    print(f"[AUTH] Admin self-heal: checking user '{ADMIN_EMAIL}'...")
+    print(f"[AUTH] ADMIN_PASSWORD env var is {'SET (non-default)' if ADMIN_PASSWORD != 'ChangeMe123' else 'DEFAULT — skipping self-heal to prevent accidental password reset'}")
 
-        if not admin:
-            print(f"[FIX] Creating default admin: {ADMIN_EMAIL}")
-            new_admin = models.User(
-                name="Admin",
-                email=ADMIN_EMAIL,
-                password_hash=get_password_hash(ADMIN_PASSWORD),
-                role=models.UserRole.ADMIN,
-                organization="NEXUS HQ"
-            )
-            db.add(new_admin)
-            db.commit()
-            print("[OK] Admin user created.")
+    if ADMIN_PASSWORD == "ChangeMe123":
+        print("[WARNING] ADMIN_PASSWORD is unset/default. Skipping self-heal. Set ADMIN_PASSWORD env var on Render.")
+    else:
+        db = SessionLocal()
+        try:
+            admin = db.query(models.User).filter(models.User.email == ADMIN_EMAIL).first()
 
-        else:
-            if not verify_password(ADMIN_PASSWORD, admin.password_hash):
-                print("[FIX] Resetting admin password...")
-                admin.password_hash = get_password_hash(ADMIN_PASSWORD)
+            if not admin:
+                print(f"[FIX] Admin '{ADMIN_EMAIL}' not found — creating now.")
+                new_admin = models.User(
+                    name="Admin",
+                    email=ADMIN_EMAIL,
+                    password_hash=get_password_hash(ADMIN_PASSWORD),
+                    role=models.UserRole.ADMIN,
+                    organization="NEXUS HQ"
+                )
+                db.add(new_admin)
                 db.commit()
-                print("[OK] Admin password restored.")
+                print("[OK] Admin user created successfully.")
 
-    finally:
-        db.close()
+            else:
+                print(f"[AUTH] Admin '{ADMIN_EMAIL}' exists. Verifying password hash...")
+                password_ok = verify_password(ADMIN_PASSWORD, admin.password_hash)
+                if not password_ok:
+                    print(f"[FIX] Password mismatch detected for '{ADMIN_EMAIL}'. Resetting hash to match ADMIN_PASSWORD env var.")
+                    admin.password_hash = get_password_hash(ADMIN_PASSWORD)
+                    db.commit()
+                    print("[OK] Admin password hash updated.")
+                else:
+                    print(f"[OK] Admin password hash is valid. No changes needed.")
+
+        except Exception as e:
+            print(f"[ERROR] Admin self-heal failed: {e}")
+            import traceback
+            traceback.print_exc()
+        finally:
+            db.close()
 
     # -------- START SAFE MONITORING --------
     asyncio.create_task(safe_monitoring())

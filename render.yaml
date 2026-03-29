@@ -19,10 +19,14 @@ services:
         fromDatabase:
           name: nexus-db
           property: connectionString
+      # IMPORTANT: Set this to a strong, fixed value in the Render dashboard.
+      # Using generateValue: true causes all JWTs to be invalidated on every redeploy.
       - key: SECRET_KEY
-        generateValue: true
+        sync: false
+      # This password is what the startup self-heal uses to create/reset the admin account.
+      # It MUST match the password you use to log in as admin.
       - key: ADMIN_PASSWORD
-        value: "NEXUS_Admin@123"
+        value: "Helenricky@04"
 
   # React Frontend
   - type: web
@@ -37,6 +41,7 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20.11.1"
+      # Let Render inject the exact backend URL dynamically
       - key: VITE_API_URL
         fromService:
           type: web

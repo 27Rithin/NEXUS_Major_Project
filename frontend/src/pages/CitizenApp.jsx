@@ -43,8 +43,8 @@ const CitizenApp = () => {
     useEffect(() => {
         let ws;
         const connectWS = () => {
-            console.log("[NEXUS] Connecting to Mission Control WS:", config.WS_URL);
-            ws = new WebSocket(config.WS_URL);
+            console.log("[NEXUS] Connecting to Mission Control WS:", import.meta.env.VITE_WS_URL || config.WS_URL);
+            ws = new WebSocket(import.meta.env.VITE_WS_URL || config.WS_URL);
             
             ws.onopen = () => {
                 console.log("[OK] Connected to NEXUS Mission Control.");
@@ -70,8 +70,8 @@ const CitizenApp = () => {
             };
 
             ws.onclose = () => {
-                console.warn("[WARN] WS Disconnected. Retrying in 5s...");
-                setTimeout(connectWS, 5000); // Reconnect loop
+                console.warn("[WARN] WS Disconnected. Retrying in 2s...");
+                setTimeout(connectWS, 2000); // Reconnect loop
             };
         };
 

@@ -1,30 +1,40 @@
-// API_URL is the FastAPI /api prefix root (e.g. http://localhost:8000/api).
-// Use serverOrigin for routes on the app root (e.g. GET /).
+// API_URL resolution priority:
+// 1. VITE_API_URL env var (set by Render or .env.local) — used as-is if it's a full URL.
+// 2. If VITE_API_URL is a bare hostname (from Render's fromService.property:host), wrap it.
+// 3. Fall back to localhost for local development.
+
 const defaultApiUrl = 'http://localhost:8000/api';
 
-// Handle dynamic Vite injection (e.g., from Render deploying the backend)
-let baseApiUrl = import.meta.env.VITE_API_URL || defaultApiUrl;
+let rawUrl = import.meta.env.VITE_API_URL || '';
 
-// If Render passes just the 'host' (e.g., "nexus-backend-xyz"), make it a full URL
-if (!baseApiUrl.startsWith('http://') && !baseApiUrl.startsWith('https://')) {
-    // If it's a Render internal host without a TLD, append .onrender.com
-    if (!baseApiUrl.includes('.') && baseApiUrl !== 'localhost') {
-        baseApiUrl = `https://${baseApiUrl}.onrender.com`;
-    } else {
-        baseApiUrl = `https://${baseApiUrl}`;
+let baseApiUrl;
+
+if (!rawUrl) {
+    // No env var — use local dev default
+    baseApiUrl = defaultApiUrl;
+} else if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+    // Already a full URL — use it directly, just ensure /api suffix
+    baseApiUrl = rawUrl.replace(/\/+$/, '');
+    if (!baseApiUrl.endsWith('/api')) {
+        baseApiUrl = `${baseApiUrl}/api`;
     }
+} else {
+    // Bare hostname (e.g., "nexus-backend" or "nexus-backend.onrender.com")
+    // Add .onrender.com suffix if it's a Render internal hostname with no TLD
+    if (!rawUrl.includes('.')) {
+        rawUrl = `${rawUrl}.onrender.com`;
+    }
+    baseApiUrl = `https://${rawUrl}/api`;
 }
 
-if (!baseApiUrl.endsWith('/api')) {
-    baseApiUrl = `${baseApiUrl.replace(/\/$/, '')}/api`;
-}
-
-// Automatically construct WebSocket URL from API URL if not explicitly provided
-let baseWsUrl = import.meta.env.VITE_WS_URL;
-if (!baseWsUrl && baseApiUrl) {
-    baseWsUrl = baseApiUrl.replace(/^http/, 'ws').replace(/\/api$/, '') + '/ws';
-} else if (!baseWsUrl) {
-    baseWsUrl = 'ws://localhost:8000/ws';
+// Automatically construct WebSocket URL from API URL
+let baseWsUrl = import.meta.env.VITE_WS_URL || '';
+if (!baseWsUrl) {
+    // Derive WS URL from HTTP API URL: replace http(s) with ws(s), strip /api, add /ws
+    baseWsUrl = baseApiUrl
+        .replace(/^https/, 'wss')
+        .replace(/^http/, 'ws')
+        .replace(/\/api$/, '/ws');
 }
 
 export const config = {

@@ -20,8 +20,8 @@ class Settings(BaseSettings):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Render uses 'postgres://' but SQLAlchemy requires 'postgresql://'
+        # Render uses 'postgres://' but SQLAlchemy requires 'postgresql+psycopg2://'
         if self.DATABASE_URL and self.DATABASE_URL.startswith("postgres://"):
-            self.DATABASE_URL = self.DATABASE_URL.replace("postgres://", "postgresql://", 1)
+            self.DATABASE_URL = self.DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
 
 settings = Settings()

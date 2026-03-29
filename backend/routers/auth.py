@@ -36,8 +36,22 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    print(f"[LOGIN] Attempt for email: '{form_data.username}'")
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.password_hash):
+    
+    if not user:
+        print(f"[LOGIN] FAILED — No user found with email: '{form_data.username}'")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    password_valid = verify_password(form_data.password, user.password_hash)
+    print(f"[LOGIN] User found: '{user.email}' | Password valid: {password_valid}")
+    
+    if not password_valid:
+        print(f"[LOGIN] FAILED — Password mismatch for '{user.email}'")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -48,6 +62,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     access_token = create_access_token(
         data={"sub": user.email, "role": user.role}, expires_delta=access_token_expires
     )
+    print(f"[LOGIN] SUCCESS for '{user.email}' (role: {user.role})")
     return {"access_token": access_token, "token_type": "bearer", "user": {
         "id": str(user.id),
         "name": user.name,

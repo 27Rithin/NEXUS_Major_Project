@@ -6,6 +6,7 @@ import 'leaflet.heat';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ShieldAlert, Truck, Flame, Ship, Navigation, MapPin, Flag, Building } from 'lucide-react';
 import { getDisasterConfig } from '../config/disasterTypes';
+import api from '../services/api';
 
 // Fix for default Leaflet markers in React
 import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
@@ -364,16 +365,12 @@ const NexusMap = memo(function NexusMap({ events, selectedEvent, activeRoute, on
                                 
                                 // Call Backend to update location
                                 try {
-                                    const response = await fetch(`http://localhost:8000/api/events/${event.id}/location`, {
-                                        method: 'PATCH',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'Authorization': `Bearer ${localStorage.getItem('token')}` // Auth assumed
-                                        },
-                                        body: JSON.stringify({ lat: position.lat, lng: position.lng })
+                                    const response = await api.patch(`/events/${event.id}/location`, {
+                                        lat: position.lat,
+                                        lng: position.lng
                                     });
                                     
-                                    if (response.ok) {
+                                    if (response.status === 200) {
                                         // Update local state if necessary or let WebSocket broadcast handle it
                                         onSelectEvent({ ...event, location: { lat: position.lat, lng: position.lng } });
                                     }

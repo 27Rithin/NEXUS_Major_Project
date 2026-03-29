@@ -34,7 +34,7 @@ const Sidebar = memo(function Sidebar({
         if (!setEvents) return;
 
         const connectWS = () => {
-            const ws = new WebSocket(config.WS_URL);
+            const ws = new WebSocket(import.meta.env.VITE_WS_URL || config.WS_URL);
             
             ws.onopen = () => {
                 if (setWsStatus) setWsStatus('connected');
@@ -82,7 +82,7 @@ const Sidebar = memo(function Sidebar({
 
             ws.onclose = () => {
                 if (setWsStatus) setWsStatus('disconnected');
-                setTimeout(connectWS, 5000); // Simple reconnect
+                setTimeout(connectWS, 2000); // Simple reconnect
             };
 
             return ws;

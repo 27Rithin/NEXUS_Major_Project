@@ -811,3 +811,62 @@ INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
 INFO  [alembic.runtime.migration] Will assume transactional DDL.
 [18:06:46.71] Starting Frontend... 
 [18:06:46.74] Backend service launched. 
+[29-03-2026 11:20:02.64] NEXUS Launcher started. 
+[11:20:03.12] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[11:20:10.06] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[11:20:18.86] Starting Frontend... 
+[11:20:18.91] Backend service launched. 
+[29-03-2026 11:21:45.12] NEXUS Launcher started. 
+[11:21:45.64] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[11:21:54.87] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[11:22:03.33] Starting Frontend... 
+[11:22:03.37] Backend service launched. 
+[11:35:50.02] UNHEALTHY STATUS DETECTED. 
+[11:35:53.83] Backend service launched. 
+[11:38:02.93] Backend service launched. 
+[11:48:04.62] UNHEALTHY STATUS DETECTED. 
+[11:48:20.82] Backend service launched. 
+[11:52:41.65] Backend service launched. 
+[11:56:16.06] Backend service launched. 
+[11:59:54.92] Backend service launched. 
+[29-03-2026 12:01:40.21] NEXUS Launcher started. 
+[12:01:40.75] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[12:01:48.02] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[12:01:54.07] Starting Frontend... 
+[12:01:54.10] Backend service launched. 
