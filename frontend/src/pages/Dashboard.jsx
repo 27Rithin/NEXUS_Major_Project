@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useCallback } from 'react';
+import React, { useState, useEffect, useContext, useCallback, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
 import NexusMap from '../components/Map';
 import { EventService, AgentService, default as api } from '../services/api';
@@ -15,53 +15,59 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [activeRoute, setActiveRoute] = useState(null);
-  const [wsStatus, setWsStatus] = useState('connecting'); // 'connecting', 'connected', 'disconnected'
-  const [apiHealth, setApiHealth] = useState('unknown'); // 'healthy', 'waking_up', 'degraded', 'offline'
-  const [failCount, setFailCount] = useState(0);
+  const [wsStatus, setWsStatus] = useState('connecting');
+  const [apiHealth, setApiHealth] = useState('unknown');
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [aiStatus, setAiStatus] = useState('standby');
   const { user, logout } = useContext(AuthContext);
   const { addToast } = useToast();
 
+  // Cold-Start Resilience Refs
+  const [isWarmingUp, setIsWarmingUp] = useState(false);
+  const successCount = useRef(0);
+  const failCount = useRef(0);
+  const isChecking = useRef(false);
+  const healthInterval = useRef(null);
+
+  // The ONE health function + useEffect:
   const checkApiHealth = useCallback(async () => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-    try {
-      const startTime = Date.now();
-      const pingUrl = `${config.API_URL.replace(/\/+$/, '')}/ping`;
-      const res = await fetch(pingUrl, { signal: controller.signal });
-      const data = await res.json();
-      const latency = Date.now() - startTime;
-      clearTimeout(timeoutId);
-      
-      if (res.ok && data.status === 'ok') {
-        setFailCount(0);
-        if (latency > 2500 && apiHealth === 'unknown') {
-          setApiHealth('waking_up');
-        } else {
-          setApiHealth(latency > 1000 ? 'degraded' : 'healthy');
-        }
-      } else {
-        setFailCount(prev => prev + 1);
+      if (isChecking.current) return;
+      isChecking.current = true;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 65000);
+      try {
+          const pingUrl = `${config.API_URL.replace(/\/+$/, '')}/ping`;
+          const res = await fetch(pingUrl, { signal: controller.signal, cache: 'no-store' });
+          const data = await res.json();
+          clearTimeout(timeoutId);
+          if (res.ok && data.status === 'ok') {
+              failCount.current = 0;
+              successCount.current += 1;
+              if (successCount.current >= 2) {
+                  setApiHealth('healthy');
+                  setIsWarmingUp(false);
+              }
+          }
+      } catch {
+          clearTimeout(timeoutId);
+          successCount.current = 0;
+          failCount.current += 1;
+          if (failCount.current === 1) setIsWarmingUp(true);
+          if (failCount.current >= 3) {
+              setApiHealth('offline');
+              setIsWarmingUp(false);
+          }
+      } finally {
+          isChecking.current = false;
       }
-    } catch {
-      clearTimeout(timeoutId);
-      setFailCount(prev => prev + 1);
-    }
-  }, [apiHealth]);
-
-  useEffect(() => {
-    // If we've failed 3 times in a row, then mark as offline
-    if (failCount >= 3) {
-      setApiHealth('offline');
-    }
-  }, [failCount]);
+  }, []);
 
   useEffect(() => {
     checkApiHealth();
-    const interval = setInterval(checkApiHealth, 10000); // Check every 10s
-    return () => clearInterval(interval);
+    healthInterval.current = setInterval(checkApiHealth, 30000);
+    return () => {
+        if (healthInterval.current) clearInterval(healthInterval.current);
+    };
   }, [checkApiHealth]);
 
   const fetchEvents = useCallback(async (isInitial = false) => {
@@ -192,6 +198,13 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col h-screen bg-transparent overflow-hidden">
+      {/* 📡 COLD START BANNER */}
+      {isWarmingUp && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-indigo-500/90 text-white px-6 py-2 rounded-full font-black shadow-2xl flex items-center gap-3 backdrop-blur-md border border-indigo-400 animate-pulse">
+            <div className="w-2 h-2 bg-white rounded-full animate-ping" />
+            <span>📡 NEXUS CORE WAKING UP — SYSTEMS INITIALIZING...</span>
+        </div>
+      )}
       {/* Top Navbar */}
       <div className="h-14 bg-slate-900/80 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-6 z-20 w-full shrink-0 shadow-lg shadow-black/20">
         <div className="flex items-center space-x-4">

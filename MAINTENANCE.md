@@ -10,7 +10,9 @@ Windows sometimes struggles to resolve `localhost` correctly between IPv4 and IP
 ## 2. Common Fixes
 
 ### ❌ Problem: "Failed to fetch active events" (Dashboard)
-**Cause**: The database schema is out of sync with the backend code.
+**Cause**: The- **Database Consistency**: Ensure `migrate.py` is part of your build command.
+- **Render Persistence**: On the Free Tier, Render spins down your backend after 15 minutes of inactivity. For your demo, use [cron-job.org](https://cron-job.org) to ping `https://your-backend-url.onrender.com/api/ping` every 10 minutes. This will keep the server "hot" and eliminate cold-start latency entirely.
+the backend code.
 **Fix**:
 1. Open a terminal in the `backend` folder.
 2. Run: `venv\Scripts\activate`

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, MapPin, Activity, Radio, VolumeX, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 import { useToast } from '../components/useToast';
@@ -29,6 +29,13 @@ const CitizenApp = () => {
     const [countdownEta, setCountdownEta] = useState(null);
     const [queuePosition, setQueuePosition] = useState(null);
     const { addToast } = useToast();
+
+    // Cold-Start Resilience Refs
+    const successCount = useRef(0);
+    const failCount = useRef(0);
+    const isChecking = useRef(false);
+    const healthInterval = useRef(null);
+    const [isWarmingUp, setIsWarmingUp] = useState(false);
 
     const flushSOSQueue = useCallback(() => {
         const queue = JSON.parse(localStorage.getItem('nexus_sos_queue') || '[]');
@@ -69,86 +76,56 @@ const CitizenApp = () => {
         }
     }, [wsStatus]);
 
+    // The ONE health useEffect:
     useEffect(() => {
         let isMounted = true;
-        let timer;
-        let failCount = 0;
-        let successCount = 0; // STABILITY GUARD: Track consecutive successes
 
         const checkHealth = async () => {
+            if (isChecking.current) return;
+            isChecking.current = true;
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
-
+            const timeoutId = setTimeout(() => controller.abort(), 65000);
             try {
-                const startTime = Date.now();
-                // USE PING: Fast handshake for UI status indicator
-                const res = await fetch(`${config.API_URL}ping`, { signal: controller.signal });
+                const res = await fetch(`${config.API_URL}ping`, {
+                    signal: controller.signal,
+                    cache: 'no-store'
+                });
                 const data = await res.json();
-                const latency = Date.now() - startTime;
                 clearTimeout(timeoutId);
-
                 if (!isMounted) return;
-
                 if (res.ok && data.status === "ok") {
-                    successCount++;
-                    failCount = 0;
-                    
-                    if (latency > 2500 && systemStatus === 'unknown') {
-                        setSystemStatus("initializing");
-                    } else if (successCount >= 3) { // Require 3 stable pings
-                        if (!backendOnline) setBackendOnline(true);
+                    failCount.current = 0;
+                    successCount.current += 1;
+                    if (successCount.current >= 2) {
+                        setBackendOnline(true);
                         setSystemStatus("healthy");
-                    }
-                } else {
-                    successCount = 0;
-                    failCount++;
-                    if (failCount >= 3) {
-                        setBackendOnline(false);
-                        setSystemStatus("down");
+                        setIsWarmingUp(false);
                     }
                 }
-            } catch (err) {
+            } catch {
                 clearTimeout(timeoutId);
                 if (!isMounted) return;
-                successCount = 0;
-                failCount++;
-                // Grace period: allow 3 fails before declaring 'Offline'
-                if (failCount >= 3) {
+                successCount.current = 0;
+                failCount.current += 1;
+                if (failCount.current === 1) setIsWarmingUp(true);
+                if (failCount.current >= 3) {
                     setBackendOnline(false);
                     setSystemStatus("down");
+                    setIsWarmingUp(false);
                 }
+            } finally {
+                isChecking.current = false;
             }
-
-            const nextInterval = Math.min(5000 * Math.pow(2, Math.max(0, failCount - 2)), 30000);
-            timer = setTimeout(checkHealth, nextInterval);
         };
-
-        const handleOnline = () => {
-            // Don't just trust the OS "Online" event immediately.
-            // Reset counts and trigger a health check to verify manually.
-            successCount = 0;
-            checkHealth();
-        };
-
-        const handleOffline = () => {
-            setBackendOnline(false);
-            setSystemStatus("down");
-            successCount = 0;
-            addToast("Network connection lost. Offline mode active.", "warning");
-        };
-
-        window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', handleOffline);
 
         checkHealth();
+        healthInterval.current = setInterval(checkHealth, 30000);
 
         return () => {
             isMounted = false;
-            clearTimeout(timer);
-            window.removeEventListener('online', handleOnline);
-            window.removeEventListener('offline', handleOffline);
+            if (healthInterval.current) clearInterval(healthInterval.current);
         };
-    }, [addToast, backendOnline]); // Removed redundant flushSOSQueue dependency
+    }, []);
 
     // STABILITY EFFECT: Only flush queue when connection is TRULY stable
     useEffect(() => {
