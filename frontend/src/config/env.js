@@ -38,6 +38,7 @@ if (!baseWsUrl) {
     baseWsUrl = baseApiUrl
         .replace(/^https/, 'wss')
         .replace(/^http/, 'ws')
+        .replace(/\/api\/.*$/, '/ws')
         .replace(/\/api$/, '/ws');
 }
 
