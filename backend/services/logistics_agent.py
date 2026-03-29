@@ -109,9 +109,10 @@ class LogisticsAgent:
                   starting coordinates, and estimated time (mins).
         """
         # 1. Find nearest available unit
+        proper_unit_type = unit_type.title()
         available_units = db.query(models.RescueUnit).filter(
             models.RescueUnit.status == models.RescueUnitStatus.AVAILABLE,
-            models.RescueUnit.unit_type == unit_type.upper()
+            models.RescueUnit.unit_type == proper_unit_type
         ).all()
         
         start = (end[0] - 0.02, end[1] - 0.02) # Default fallback start
@@ -218,6 +219,7 @@ class LogisticsAgent:
 
         return {
             "unit_id": str(unit_id) if unit_id else None,
+            "unit_type": proper_unit_type,
             "path_geometry": path_geometry,
             "start_coords": {"lat": start[0], "lng": start[1]},
             "estimated_time_mins": round(min(estimated_time, 9.5), 1)

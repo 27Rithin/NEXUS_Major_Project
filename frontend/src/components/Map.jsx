@@ -142,6 +142,8 @@ function AnimatedRoute({ route }) {
     const midIndex = Math.floor(pathCoords.length / 2);
     const midpoint = pathCoords[midIndex];
 
+    console.log("[AnimatedRoute DEBUG] Render unit:", route.unit_type, route.unit_id);
+
     const vehicleIcon = L.divIcon({
         className: 'vehicle-marker',
         html: `<div class="relative flex items-center justify-center p-0.5">
@@ -207,7 +209,7 @@ function AnimatedRoute({ route }) {
             })}>
                 <Tooltip direction="top" offset={[0, -10]} sticky className="coordinate-tooltip">
                     <div className="bg-slate-900/90 text-[10px] text-cyan-400 p-1 font-mono rounded border border-cyan-500/30">
-                        UNIT: {originPos[0].toFixed(4)}, {originPos[1].toFixed(4)}
+                        Start: [{originPos[0].toFixed(4)}, {originPos[1].toFixed(4)}]
                     </div>
                 </Tooltip>
             </Marker>
@@ -215,7 +217,7 @@ function AnimatedRoute({ route }) {
             <Marker position={destPos} zIndexOffset={50000} icon={destIcon}>
                 <Tooltip direction="top" offset={[0, -5]} sticky className="coordinate-tooltip">
                     <div className="bg-slate-900/90 text-[10px] text-red-400 p-1 font-mono rounded border border-red-500/30">
-                        TARGET: {destPos[0].toFixed(4)}, {destPos[1].toFixed(4)}
+                        Destination: [{destPos[0].toFixed(4)}, {destPos[1].toFixed(4)}]
                     </div>
                 </Tooltip>
             </Marker>
