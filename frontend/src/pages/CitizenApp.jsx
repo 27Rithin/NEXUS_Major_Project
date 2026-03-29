@@ -199,11 +199,6 @@ const CitizenApp = () => {
                                  err.code === "ERR_NETWORK" ||
                                  err.message.includes("timeout");
 
-            if (isNetworkError) {
-                setBackendOnline(false);
-                setSystemStatus("down");
-            }
-
             const queue = JSON.parse(localStorage.getItem('nexus_sos_queue') || '[]');
             queue.push(payload);
             localStorage.setItem('nexus_sos_queue', JSON.stringify(queue));
