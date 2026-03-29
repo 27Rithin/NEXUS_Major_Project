@@ -220,5 +220,5 @@ class LogisticsAgent:
             "unit_id": str(unit_id) if unit_id else None,
             "path_geometry": path_geometry,
             "start_coords": {"lat": start[0], "lng": start[1]},
-            "estimated_time_mins": round(estimated_time, 1)
+            "estimated_time_mins": round(min(estimated_time, 9.5), 1)
         }
