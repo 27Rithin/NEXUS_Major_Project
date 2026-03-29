@@ -28,7 +28,7 @@ export const useWebSocket = (url, onMessage) => {
                 if (socket.readyState === WebSocket.OPEN) {
                     socket.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
                 }
-            }, 20000);
+            }, 10000);
         };
 
         socket.onmessage = (event) => {

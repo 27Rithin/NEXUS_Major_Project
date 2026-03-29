@@ -19,9 +19,8 @@ app.router.redirect_slashes = True
 # -------------------- CORS --------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # For stabilization, allow all; can restrict after successful demo
-    allow_origin_regex=r"https?://.*\.onrender\.com",
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
