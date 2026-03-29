@@ -10,26 +10,24 @@ let rawUrl = import.meta.env.VITE_API_URL || '';
 let baseApiUrl;
 
 if (!rawUrl) {
-    // No env var — use local dev default
     baseApiUrl = defaultApiUrl;
-} else if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
-    // Already a full URL — use it directly, just ensure /api suffix
-    // Ensure baseApiUrl ends clean without a trailing slash first
-    baseApiUrl = rawUrl.replace(/\/+$/, '');
-
-    // If it's already a full URL (http or https), use it then append /api/ if missing
-    if (baseApiUrl.startsWith('http://') || baseApiUrl.startsWith('https://')) {
-        if (!baseApiUrl.endsWith('/api')) {
-            baseApiUrl = `${baseApiUrl}/api/`;
+} else {
+    // Standardize: Remove trailing slash first
+    const cleanUrl = rawUrl.trim().replace(/\/+$/, '');
+    
+    if (cleanUrl.startsWith('http')) {
+        // Full URL provided: ensure it ends in /api/
+        if (cleanUrl.endsWith('/api')) {
+            baseApiUrl = `${cleanUrl}/`;
+        } else if (cleanUrl.includes('/api/')) {
+            baseApiUrl = `${cleanUrl.split('/api/')[0]}/api/`;
         } else {
-            baseApiUrl = `${baseApiUrl}/`;
+            baseApiUrl = `${cleanUrl}/api/`;
         }
     } else {
-        // Bare hostname logic
-        if (!baseApiUrl.includes('.')) {
-            baseApiUrl = `${baseApiUrl}.onrender.com`;
-        }
-        baseApiUrl = `https://${baseApiUrl}/api/`;
+        // Bare hostname provided (Render internal or short name)
+        const host = cleanUrl.includes('.') ? cleanUrl : `${cleanUrl}.onrender.com`;
+        baseApiUrl = `https://${host}/api/`;
     }
 }
 
