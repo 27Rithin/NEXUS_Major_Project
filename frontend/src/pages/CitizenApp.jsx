@@ -98,19 +98,74 @@ const CitizenApp = () => {
             if (!isSilent) addToast("Syncing with satellite relay...", "warning", 5000);
         });
     };
+    // Primary WebSocket Sync: Zero-Latency Updates
+    useEffect(() => {
+        if (lastMessage !== null) {
+            try {
+                const message = JSON.parse(lastMessage.data);
+                if (message.type === 'new_incident' && message.data.id === sosResponse?.event_id) {
+                    console.info("⚡ WebSocket SYNC: SOS Severity updated via real-time feed.");
+                    setSosResponse(curr => ({...curr, ...message.data}));
+                }
+            } catch (err) {
+                console.error("WebSocket parse fail:", err);
+            }
+        }
+    }, [lastMessage, sosResponse?.event_id]);
 
     const handleSOS = () => {
         setSending(true);
         playSOSBeep();
-        setTimeout(() => {
-            const mockLat = 13.6012;
-            const mockLng = 79.3905;
-            processSOS({
-                lat: mockLat,
-                lng: mockLng,
-                description: `Emergency activated via Citizen App SOS. Category: ${selectedCategory}`,
+        setTimeout(async () => {
+            setEmergencyState(true);
+            // PHASE 1: Immediate Handshake
+            const response = await api.post('/ingestion/sos', {
+                lat: 13.6012,
+                lng: 79.3905,
+                description: `Emergency: ${selectedCategory} reported`,
                 device_id: deviceId
-            }, false);
+            });
+            
+            console.info("🛰️ SOS Handshake Success:", response.data);
+            setSosResponse(response.data);
+            setSending(false);
+            
+            // PHASE 2: Start Smart-Polling Fallback
+            if (response.data.event_id) {
+                let attempts = 0;
+                let pollInterval = setInterval(async () => {
+                    attempts++;
+                    
+                    // Success-Stop Logic
+                    if (sosResponse?.severity) {
+                        console.info("✅ Severity synced. Stopping poll.");
+                        clearInterval(pollInterval);
+                        return;
+                    }
+
+                    // Retry-Limit (10 attempts / 30s)
+                    if (attempts > 10) {
+                        console.error("🛑 SAT-SYNC Timeout: No response after 30s.");
+                        clearInterval(pollInterval);
+                        return;
+                    }
+
+                    try {
+                        console.info(`⏳ SAT-SYNC Polling (Attempt ${attempts})...`);
+                        const update = await api.get(`/events/${response.data.event_id}`);
+                        
+                        if (update.data.severity_level) {
+                            console.info("✅ Polling update successful!");
+                            setSosResponse(update.data);
+                            clearInterval(pollInterval);
+                        } else {
+                            console.info("⏳ Still processing backend AI...");
+                        }
+                    } catch (err) {
+                        console.warn("⚠️ Polling attempt failed. Retrying...");
+                    }
+                }, 3000);
+            }
         }, 1500);
     };
 
@@ -254,9 +309,9 @@ const CitizenApp = () => {
                                                 <field.icon size={12} className={field.color} />
                                                 <span className="text-[10px] font-orbitron font-bold text-slate-500 uppercase tracking-widest">{field.label}</span>
                                             </div>
-                                            <div className={`px-2 py-0.5 rounded text-[8px] font-orbitron font-black tracking-widest uppercase italic border border-white/5 ${sosResponse?.severity ? 'bg-black/40' : 'bg-slate-500/20 text-slate-500'}`}>
-                                                {sosResponse?.severity || 'ANALYZING...'}
-                                            </div>
+                                    <div className={`px-2 py-0.5 rounded text-[8px] font-orbitron font-black tracking-widest uppercase italic border border-white/5 ${sosResponse?.severity || sosResponse?.severity_level ? 'bg-black/40' : 'bg-slate-500/20 text-slate-500'}`}>
+                                        {sosResponse?.severity || sosResponse?.severity_level || 'ANALYZING...'}
+                                    </div>
                                         </div>
                                     ))}
                                     

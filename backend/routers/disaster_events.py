@@ -63,6 +63,30 @@ def get_all_events(skip: int = 0, limit: int = 100, db: Session = Depends(get_db
         serialized_events.append(event_dict)
     return serialized_events
 
+@router.get("/{event_id}", response_model=schemas.EventResponse)
+def get_event_by_id(event_id: UUID, db: Session = Depends(get_db)):
+    event = db.query(models.DisasterEvent).filter(models.DisasterEvent.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Incident not found")
+        
+    point = to_shape(event.location)
+    return {
+        "id": event.id,
+        "title": event.title or "Untitled Incident",
+        "description": event.description or "",
+        "category": event.category or "Default",
+        "location": {"lng": float(point.x), "lat": float(point.y)} if point else {"lat": DEFAULT_LAT, "lng": DEFAULT_LNG},
+        "social_nlp_score": float(event.social_nlp_score or 0.0),
+        "priority_score": float(event.priority_score or 0.0),
+        "confidence_score": float(event.confidence_score or 0.0),
+        "severity_level": event.severity_level or "LOW",
+        "status": event.status.value if hasattr(event.status, 'value') else str(event.status),
+        "is_verified": event.is_verified,
+        "xai_breakdown": event.xai_breakdown or {},
+        "created_at": event.created_at,
+        "updated_at": event.updated_at
+    }
+
 @router.get("/{event_id}/route")
 def get_event_route(event_id: UUID, db: Session = Depends(get_db)) -> Dict[str, Any]:
     """Fetches the route geometry for an event, if any."""

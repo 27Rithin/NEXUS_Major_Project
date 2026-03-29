@@ -98,6 +98,7 @@ async def process_event(event_id: str, **kwargs):
 @router.post("/sos")
 async def receive_sos(request: SOSRequest, db: Session = Depends(get_db)):
     """Receives direct SOS signals and performs immediate multi-modal verification."""
+    logger.info(f"🛰️ SOS RECEIVED from Device: {request.device_id or 'UNKNOWN'} at [{request.lat}, {request.lng}]")
     weather_data = WeatherVerificationAgent.get_weather_data(request.lat, request.lng)
     
     decision = DecisionEngine.evaluate_priority(
@@ -122,6 +123,7 @@ async def receive_sos(request: SOSRequest, db: Session = Depends(get_db)):
     
     db.add(new_event)
     db.flush()
+    logger.info(f"✅ EVENT CREATED: {new_event.id} | Status: {new_event.status.value}")
 
     # 1. Fallback Logic: Default to Ambulance if category is unknown
     dispatch_info = None
@@ -169,6 +171,7 @@ async def receive_sos(request: SOSRequest, db: Session = Depends(get_db)):
         "created_at": new_event.created_at.isoformat()
     }
     await manager.broadcast(json.dumps({"type": "new_incident", "data": event_payload}))
+    logger.info(f"📢 BROADCAST SENT for Event: {new_event.id}")
 
     return {
         "message": "Rescue Request Received",
