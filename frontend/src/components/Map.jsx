@@ -73,20 +73,38 @@ const ZoomManager = ({ setZoom }) => {
  * @param {Object} props.route - The route data object returned from the Logistics Agent.
  * @returns {JSX.Element|null}
  */
-function AnimatedRoute({ route }) {
+function AnimatedRoute({ route, severity = 'LOW' }) {
     const map = useMap();
     const [progress, setProgress] = useState(0);
     const pathCoords = useMemo(() => 
         (route.route_waypoints || route.path_geometry || []).map(p => [p.lat, p.lng]),
     [route]);
     
-    const isDrone = (route.unit_type || "").toLowerCase().includes("drone");
-    const durationMs = 8000;
+    // Calculate total distance for display
+    const totalDistanceKm = useMemo(() => {
+        if (pathCoords.length < 2) return 0;
+        let dist = 0;
+        for (let i = 0; i < pathCoords.length - 1; i++) {
+            const p1 = L.latLng(pathCoords[i]);
+            const p2 = L.latLng(pathCoords[i+1]);
+            dist += p1.distanceTo(p2);
+        }
+        return (dist / 1000).toFixed(1);
+    }, [pathCoords]);
+
+    const unitType = (route.unit_type || "Ambulance");
+    const isDrone = unitType.toLowerCase().includes("drone");
+    
+    // Severity-based settings
+    const sev = (severity || 'LOW').toUpperCase();
+    const speedClass = sev === 'CRITICAL' ? 'route-flow-fast' : sev === 'MEDIUM' ? 'route-flow-normal' : 'route-flow-slow';
+    const routeColor = sev === 'CRITICAL' ? '#ef4444' : sev === 'MEDIUM' ? '#f97316' : '#22c55e';
+    const durationMs = sev === 'CRITICAL' ? 4000 : sev === 'MEDIUM' ? 8000 : 12000;
 
     useEffect(() => {
         if (pathCoords.length >= 2) {
             const bounds = L.latLngBounds(pathCoords);
-            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+            map.fitBounds(bounds, { padding: [100, 100], maxZoom: 16 });
         }
     }, [pathCoords, map]);
 
@@ -111,7 +129,7 @@ function AnimatedRoute({ route }) {
                         isPaused = false;
                         start = null; 
                         animationFrame = requestAnimationFrame(animate);
-                    }, 1500);
+                    }, 1000);
                 }
             } else {
                 animationFrame = requestAnimationFrame(animate); 
@@ -120,7 +138,7 @@ function AnimatedRoute({ route }) {
 
         animationFrame = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(animationFrame);
-    }, [pathCoords]);
+    }, [pathCoords, durationMs]);
 
     if (!pathCoords || pathCoords.length < 2) return null;
 
@@ -129,99 +147,127 @@ function AnimatedRoute({ route }) {
     const currentPos = visiblePath[visiblePath.length - 1];
 
     const polylineOptions = {
-        color: '#ffffff',
-        weight: isDrone ? 4 : 6,
-        opacity: 0.95,
-        className: 'route-line-professional',
+        color: routeColor,
+        weight: 10,
+        opacity: 0.9,
+        className: `route-line-dynamic ${speedClass}`,
         lineCap: 'round',
         lineJoin: 'round'
     };
 
     const originPos = pathCoords[0];
     const destPos = pathCoords[pathCoords.length - 1];
-    const midIndex = Math.floor(pathCoords.length / 2);
-    const midpoint = pathCoords[midIndex];
+    
+    // Get correct unit icon style
+    const getUnitGlowClass = (type) => {
+        const t = type.toLowerCase();
+        if (t.includes("fire")) return "unit-glow-fire";
+        if (t.includes("drone")) return "unit-glow-drone";
+        if (t.includes("boat")) return "unit-glow-boat";
+        return "unit-glow-ambulance";
+    };
 
-    console.log("[AnimatedRoute DEBUG] Render unit:", route.unit_type, route.unit_id);
-
-    const vehicleIcon = L.divIcon({
-        className: 'vehicle-marker',
-        html: `<div class="relative flex items-center justify-center p-0.5">
-                 <div class="absolute inset-0 bg-blue-500 rounded-full vehicle-radar-blip opacity-30"></div>
-                 <div style="background: white; border: 2px solid #3b82f6; width: 24px; height: 24px; border-radius: 50%; box-shadow: 0 0 15px white; position: relative; z-index: 10;">
-                   <div class="absolute inset-2 bg-blue-500 rounded-full animate-pulse"></div>
-                 </div>
-               </div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
-    });
-
-    const destIcon = L.divIcon({
-        className: 'dest-marker',
+    const movingDotIcon = L.divIcon({
+        className: 'moving-dot-marker',
         html: `<div class="relative flex items-center justify-center">
-                 <div class="absolute -inset-4 rounded-full bg-red-500/30 animate-ping"></div>
-                 <div class="bg-red-500 border-2 border-white w-5 h-5 rounded-full shadow-[0_0_15px_rgba(239,68,68,0.9)]"></div>
+                 <div class="absolute inset-0 bg-white rounded-full animate-ping opacity-75" style="width: 12px; height: 12px;"></div>
+                 <div class="bg-white rounded-full shadow-[0_0_15px_white]" style="width: 8px; height: 8px;"></div>
                </div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
+        iconSize: [12, 12],
+        iconAnchor: [6, 6]
     });
 
-    // Helper for specialized unit icons
+    const destPulsarIcon = L.divIcon({
+        className: 'dest-pulsar',
+        html: `<div class="w-full h-full rounded-full border-4 border-red-500 animate-ping opacity-50"></div>`,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20]
+    });
+
     const getUnitEmoji = (type) => {
         const t = (type || "").toUpperCase();
         if (t.includes("FIRE") || t.includes("ENGINE")) return "🚒";
         if (t.includes("DRONE") || t.includes("SCOUT")) return "🛸";
         if (t.includes("BOAT")) return "🚤";
-        return "🚑"; // Default Ambulance
+        return "🚑";
     };
 
     return (
         <>
+            {/* Background Glow Layer (Foundation) */}
             <Polyline 
                 positions={pathCoords} 
-                pathOptions={{ ...polylineOptions, opacity: 0.15, weight: 12, color: '#ffffff', className: 'route-glow-foundation' }} 
+                pathOptions={{ 
+                    color: routeColor, 
+                    weight: 18, 
+                    opacity: 0.1, 
+                    className: 'route-glow-foundation' 
+                }} 
             />
+
+            {/* Main Animated Path */}
             <Polyline 
-                positions={visiblePath} 
+                positions={pathCoords} 
                 pathOptions={polylineOptions}
             >
                 <Tooltip sticky>
-                    <div className="flex flex-col gap-1 p-1 bg-slate-900/90 backdrop-blur-md rounded border border-white/20">
-                        <span className="font-bold text-white uppercase tracking-tighter text-[10px]">Unit: {route.callsign || 'Rescue'}</span>
-                        <span className="text-blue-400 font-mono text-[11px]">ETA: {route.estimated_arrival_seconds ? Math.round(route.estimated_arrival_seconds / 60) : Math.round(route.estimated_time_mins || 0)} MIN</span>
+                    <div className="flex flex-col gap-1 p-2 bg-slate-950/90 backdrop-blur-xl rounded-lg border border-white/20 shadow-2xl min-w-[120px]">
+                        <div className="flex items-center gap-2 border-b border-white/10 pb-1 mb-1">
+                            <Navigation size={12} className="text-cyan-400" />
+                            <span className="font-black text-white uppercase tracking-widest text-[10px]">{unitType}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[11px] font-mono">
+                            <span className="text-slate-400">DIST:</span>
+                            <span className="text-white font-bold">{totalDistanceKm} KM</span>
+                        </div>
+                        <div className="flex justify-between items-center text-[11px] font-mono">
+                            <span className="text-slate-400">TIME:</span>
+                            <span className="text-cyan-400 font-bold">~{Math.round(route.estimated_time_mins || 0)} MIN</span>
+                        </div>
                     </div>
                 </Tooltip>
             </Polyline>
             
-            <Marker position={midpoint} opacity={0}>
-                <Tooltip permanent direction="top" className="eta-tooltip">
-                    <div className="bg-slate-900/90 text-white text-[10px] font-bold px-2 py-1 rounded border border-cyan-500/50 backdrop-blur-sm shadow-xl">
-                        ~{route.estimated_arrival_seconds ? Math.round(route.estimated_arrival_seconds / 60) : Math.round(route.estimated_time_mins || 0)} min
-                    </div>
-                </Tooltip>
-            </Marker>
-
+            {/* Start Marker */}
             <Marker position={originPos} zIndexOffset={50000} icon={L.divIcon({
-                className: 'start-marker',
-                html: `<div class="bg-slate-800 p-1.5 rounded border border-slate-600 shadow-lg">${getUnitEmoji(route.unit_type)}</div>`,
-                iconSize: [28, 28],
-                iconAnchor: [14, 14]
+                className: `start-marker ${getUnitGlowClass(unitType)}`,
+                html: `<div class="bg-slate-900/90 p-2 rounded-xl border-2 border-white/30 shadow-2xl transition-transform hover:scale-110 active:scale-95 cursor-pointer">
+                         <span class="text-lg leading-none">${getUnitEmoji(unitType)}</span>
+                       </div>`,
+                iconSize: [36, 36],
+                iconAnchor: [18, 18]
             })}>
-                <Tooltip direction="top" offset={[0, -10]} sticky className="coordinate-tooltip">
-                    <div className="bg-slate-900/90 text-[10px] text-cyan-400 p-1 font-mono rounded border border-cyan-500/30">
-                        Start: [{originPos[0].toFixed(4)}, {originPos[1].toFixed(4)}]
+                <Tooltip direction="top" offset={[0, -15]} sticky className="coordinate-tooltip">
+                    <div className="bg-slate-950/95 text-[10px] text-white p-2 font-bold rounded-lg border border-white/20 shadow-2xl">
+                        <span class="text-cyan-400 uppercase tracking-tighter block mb-0.5">${unitType} Location</span>
+                        <code class="text-slate-400 font-mono text-[9px] bg-black/40 px-1 rounded">${originPos[0].toFixed(5)}, ${originPos[1].toFixed(5)}</code>
                     </div>
                 </Tooltip>
             </Marker>
             
-            <Marker position={destPos} zIndexOffset={50000} icon={destIcon}>
-                <Tooltip direction="top" offset={[0, -5]} sticky className="coordinate-tooltip">
-                    <div className="bg-slate-900/90 text-[10px] text-red-400 p-1 font-mono rounded border border-red-500/30">
-                        Destination: [{destPos[0].toFixed(4)}, {destPos[1].toFixed(4)}]
+            {/* Destination Pulsar Effect */}
+            <Marker position={destPos} icon={destPulsarIcon} zIndexOffset={999} interactive={false} />
+
+            {/* Destination Marker */}
+            <Marker position={destPos} zIndexOffset={50000} icon={L.divIcon({
+                className: 'dest-marker-pro',
+                html: `<div class="relative flex items-center justify-center">
+                         <div class="absolute -inset-4 rounded-full bg-red-500/20 animate-ping"></div>
+                         <div class="bg-red-600 border-2 border-white w-6 h-6 rounded-full shadow-[0_0_20px_rgba(239,68,68,0.9)] flex items-center justify-center text-[10px] text-white font-black">!</div>
+                       </div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            })}>
+                <Tooltip direction="top" offset={[0, -10]} sticky className="coordinate-tooltip">
+                    <div className="bg-slate-950/95 text-[10px] text-white p-2 font-bold rounded-lg border border-white/20 shadow-2xl">
+                        <span class="text-red-400 uppercase tracking-tighter block mb-0.5">Incident Destination</span>
+                        <code class="text-slate-400 font-mono text-[9px] bg-black/40 px-1 rounded">${destPos[0].toFixed(5)}, ${destPos[1].toFixed(5)}</code>
                     </div>
                 </Tooltip>
             </Marker>
-            <Marker position={currentPos} icon={vehicleIcon} zIndexOffset={1001} />
+
+            {/* Moving Dot Tracking Vehicle */}
+            <Marker position={currentPos} icon={movingDotIcon} zIndexOffset={51000} />
         </>
     );
 }
@@ -452,6 +498,7 @@ const NexusMap = memo(function NexusMap({ events, selectedEvent, activeRoute, on
                 <AnimatedRoute
                     key={activeRoute.id || `${activeRoute.unit_type || 'unit'}:${(activeRoute.route_waypoints || activeRoute.path_geometry)?.length || 0}`}
                     route={activeRoute}
+                    severity={selectedEvent?.severity_level || 'LOW'}
                 />
             )}
         </MapContainer>
