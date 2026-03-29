@@ -140,21 +140,35 @@ async def _process_event_impl(db: Session, event: models.DisasterEvent, nlp_scor
         "last_updated_decay": 0
     }
     
-    await manager.broadcast(json.dumps({"type": "new_incident", "data": event_payload}))
+    try:
+        await manager.broadcast(json.dumps({"type": "new_incident", "data": event_payload}))
+    except Exception as e:
+        logger.error(f"WebSocket broadcast failed for event {event_id}: {e}")
 
+
+# Simple In-Memory Rate Limiter for SOS spam protection
+sos_rate_limit_cache = {} # device_id -> last_timestamp
 
 @router.post("/sos")
 async def receive_sos(request: SOSRequest, db: Session = Depends(get_db)):
     """Receives direct SOS signals and performs immediate multi-modal verification."""
-    # 1. Verification: Nearby Reports (5km, last 1 hour)
-    one_hour_ago = datetime.datetime.utcnow() - timedelta(hours=1)
-    # Using a simplified distance check for SQLite/Mock. In PostGIS: func.ST_DWithin(models.DisasterEvent.location, create_point(request.lat, request.lng), 5000)
-    # Here we'll do a mock query or a simple lat/lng bounding box check
-    nearby_count = db.query(models.DisasterEvent).filter(
-        models.DisasterEvent.created_at >= one_hour_ago,
-        models.DisasterEvent.status != models.EventStatus.RESOLVED
-    ).count() # Simplified for logic demonstration
-    nearby_score = min(1.0, nearby_count * 0.2)
+    # 1. Security: Rate Limiting (Requirement: Max 3 SOS/min per device)
+    now = datetime.datetime.utcnow()
+    device_id = request.device_id or "UNKNOWN"
+    
+    if device_id != "UNKNOWN":
+        if device_id in sos_rate_limit_cache:
+            timestamps = [ts for ts in sos_rate_limit_cache[device_id] if now - ts < timedelta(minutes=1)]
+            if len(timestamps) >= 3:
+                logger.warning(f"Rate limit exceeded for device {device_id}")
+                raise HTTPException(status_code=429, detail="Emergency rate limit exceeded. Please wait 1 minute.")
+            timestamps.append(now)
+            sos_rate_limit_cache[device_id] = timestamps
+        else:
+            sos_rate_limit_cache[device_id] = [now]
+
+    # 2. Verification: Crowd Consensus (Multi-post requirement)
+    crowd_confidence = SocialMediaAgent.verify_crowd_consensus(db, request.lat, request.lng)
 
     # 2. Verification: Weather
     weather_data = WeatherVerificationAgent.get_weather_data(request.lat, request.lng)
@@ -169,7 +183,7 @@ async def receive_sos(request: SOSRequest, db: Session = Depends(get_db)):
         vision_score_normalized=0.0, # No vision yet
         weather_score=weather_data["weather_severity"],
         sensor_score=sensor_score,
-        nearby_reports_score=nearby_score,
+        nearby_reports_score=crowd_confidence,
         historical_risk_score=historical_risk,
         source="citizen_app"
     )

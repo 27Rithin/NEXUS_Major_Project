@@ -56,6 +56,7 @@ def get_all_events(skip: int = 0, limit: int = 100, db: Session = Depends(get_db
             "severity_level": event.severity_level or "LOW",
             "status": event.status.value if hasattr(event.status, 'value') else str(event.status),
             "is_verified": event.is_verified,
+            "xai_breakdown": event.xai_breakdown or {},
             "created_at": event.created_at,
             "updated_at": event.updated_at
         }
@@ -137,7 +138,11 @@ def trigger_cross_modal_reasoning(event_id: UUID, db: Session = Depends(get_db))
     
     # Update Event
     event.priority_score = decision["priority_score"]
+    event.confidence_score = decision["confidence_score"]
+    event.severity_level = decision["severity_level"]
+    event.status_message = decision["status_message"]
     event.is_verified = decision["trigger_logistics"]
+    event.xai_breakdown = decision["xai_breakdown"]
     
     result = {
         "event_id": event.id,

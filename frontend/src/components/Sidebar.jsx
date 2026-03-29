@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { DisasterTypeConfig } from '../config/disasterTypes';
 import { config } from '../config/env';
 import { useToast } from './useToast';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 const Sidebar = memo(function Sidebar({
     events,
@@ -30,67 +31,42 @@ const Sidebar = memo(function Sidebar({
 
     const [now, setNow] = useState(() => Date.now());
 
-    useEffect(() => {
-        if (!setEvents) return;
-
-        const connectWS = () => {
-            const ws = new WebSocket(import.meta.env.VITE_WS_URL || config.WS_URL);
+    const handleWSMessage = useCallback((message) => {
+        if (message.type === 'new_incident') {
+            const newEvent = message.data;
+            const isSOS = newEvent.category === 'SOS';
+            const isSimulated = newEvent.title?.startsWith('Simulated:');
             
-            ws.onopen = () => {
-                if (setWsStatus) setWsStatus('connected');
-            };
+            if (!isSimulated) {
+                addToast(
+                    `NEW ${isSOS ? 'SOS' : 'INCIDENT'}: ${newEvent.title || 'Emergency Signal'}`,
+                    isSOS ? "error" : "success",
+                    isSOS ? 15000 : 5000
+                );
+            }
 
-            ws.onmessage = (event) => {
-                try {
-                    const message = JSON.parse(event.data);
-                    if (message.type === 'new_incident') {
-                        const newEvent = message.data;
-                        const isSOS = newEvent.category === 'SOS';
-                        const isSimulated = newEvent.title?.startsWith('Simulated:');
-                        
-                        if (!isSimulated) {
-                            addToast(
-                                `NEW ${isSOS ? 'SOS' : 'INCIDENT'}: ${newEvent.title || 'Emergency Signal'}`,
-                                isSOS ? "error" : "success",
-                                isSOS ? 15000 : 5000
-                            );
-                        }
+            setEvents((prev) => {
+                if (prev.find(e => e.id === newEvent.id)) return prev;
+                return [newEvent, ...prev];
+            });
 
-                        setEvents((prev) => {
-                            if (prev.find(e => e.id === newEvent.id)) return prev;
-                            // Prepend to ensure instant top placement as required
-                            return [newEvent, ...prev];
-                        });
-
-                        // AUTO-VISIBILITY: If SOS, switch to 'All' filter and auto-select
-                        if (isSOS) {
-                            setFilterCategory('All');
-                            setSelectedEvent(newEvent);
-                            
-                            // Visual feedback: Flash the sidebar header
-                            const header = document.querySelector('.telemetry-header');
-                            if (header) {
-                                header.classList.add('animate-pulse', 'bg-red-500/20');
-                                setTimeout(() => header.classList.remove('animate-pulse', 'bg-red-500/20'), 3000);
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.error("WS Message Error:", e);
+            if (isSOS) {
+                setFilterCategory('All');
+                setSelectedEvent(newEvent);
+                const header = document.querySelector('.telemetry-header');
+                if (header) {
+                    header.classList.add('animate-pulse', 'bg-red-500/20');
+                    setTimeout(() => header.classList.remove('animate-pulse', 'bg-red-500/20'), 3000);
                 }
-            };
+            }
+        }
+    }, [addToast, setEvents, setSelectedEvent]);
 
-            ws.onclose = () => {
-                if (setWsStatus) setWsStatus('disconnected');
-                setTimeout(connectWS, 2000); // Simple reconnect
-            };
+    const { status: wsStatusVal } = useWebSocket(import.meta.env.VITE_WS_URL || config.WS_URL, handleWSMessage);
 
-            return ws;
-        };
-
-        const ws = connectWS();
-        return () => ws.close();
-    }, [setEvents, setWsStatus, setSelectedEvent, addToast]);
+    useEffect(() => {
+        if (setWsStatus) setWsStatus(wsStatusVal);
+    }, [wsStatusVal, setWsStatus]);
 
     useEffect(() => {
         const id = setInterval(() => setNow(Date.now()), 10_000);
@@ -467,33 +443,90 @@ const Sidebar = memo(function Sidebar({
                                                         </div>
                                                     )}
 
-                                                    {/* AI Explanation Layer */}
-                                                    <div className="mb-4 bg-slate-900/50 p-3 rounded border border-slate-700/50">
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Why this priority?</span>
-                                                            <span className="text-[10px] text-cyan-400 font-mono">CONF: {((event.confidence_score || 0) * 100).toFixed(0)}%</span>
+                                                    {/* Incident Lifecycle Timeline (New Micro-Improvement) */}
+                                                    <div className="mb-4 bg-slate-900/40 p-3 rounded-xl border border-white/5 shadow-inner">
+                                                        <div className="flex items-center gap-1.5 mb-3 border-b border-white/5 pb-2">
+                                                            <Activity size={12} className="text-emerald-400" />
+                                                            <span className="text-[10px] uppercase font-black text-slate-300 tracking-widest">Mission Lifecycle</span>
                                                         </div>
-                                                        <div className="space-y-1.5 mb-2">
-                                                            {/* Pseudo-generated breakdown since DB schema doesn't store individual modal scores */}
-                                                            <div className="flex items-center gap-2 text-[10px]">
-                                                                <span className="w-16 text-slate-400">NLP (Text)</span>
-                                                                <div className="flex-1 bg-slate-800 rounded-full h-1 overflow-hidden"><div className="h-full bg-indigo-400" style={{ width: `${(event.confidence_score || 0.8) * 90}%` }} /></div>
+                                                        <div className="relative flex justify-between items-start px-2">
+                                                            {/* Timeline Connecting Line */}
+                                                            <div className="absolute top-2 left-4 right-4 h-0.5 bg-slate-800 z-0">
+                                                                <motion.div 
+                                                                    initial={{ width: 0 }}
+                                                                    animate={{ 
+                                                                        width: event.status === 'Resolved' ? '100%' : 
+                                                                               event.status === 'In Progress' ? '75%' : 
+                                                                               event.status !== 'Pending' ? '50%' : 
+                                                                               (event.xai_breakdown ? '25%' : '0%') 
+                                                                    }}
+                                                                    className="h-full bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500"
+                                                                />
                                                             </div>
-                                                            <div className="flex items-center gap-2 text-[10px]">
-                                                                <span className="w-16 text-slate-400">Vision (CCTV)</span>
-                                                                <div className="flex-1 bg-slate-800 rounded-full h-1 overflow-hidden"><div className="h-full bg-purple-400" style={{ width: `${(event.confidence_score || 0.5) * 60 + (event.category === 'Urban Fire' ? 30 : 0)}%` }} /></div>
-                                                            </div>
-                                                            <div className="flex items-center gap-2 text-[10px]">
-                                                                <span className="w-16 text-slate-400">Weather</span>
-                                                                <div className="flex-1 bg-slate-800 rounded-full h-1 overflow-hidden"><div className="h-full bg-cyan-400" style={{ width: `${(event.confidence_score || 0.6) * 50 + (event.category === 'Flood' ? 40 : 0)}%` }} /></div>
-                                                            </div>
-                                                            <div className="flex items-center gap-2 text-[10px]">
-                                                                <span className="w-16 text-slate-400">IoT Sensors</span>
-                                                                <div className="flex-1 bg-slate-800 rounded-full h-1 overflow-hidden"><div className="h-full bg-amber-400" style={{ width: `${(event.confidence_score || 0.7) * 70}%` }} /></div>
-                                                            </div>
+
+                                                            {[
+                                                                { label: 'Signal', icon: '📡', active: true, done: true },
+                                                                { label: 'Logic', icon: '🧠', active: !!event.xai_breakdown, done: !!event.xai_breakdown },
+                                                                { label: 'Dispatch', icon: '⚡', active: event.status !== 'Pending', done: event.status !== 'Pending' },
+                                                                { label: 'Transit', icon: '🚑', active: event.status === 'In Progress', done: event.status === 'Resolved' },
+                                                                { label: 'Arrived', icon: '🏁', active: event.status === 'Resolved', done: event.status === 'Resolved' }
+                                                            ].map((step, idx) => (
+                                                                <div key={idx} className="relative z-10 flex flex-col items-center gap-2">
+                                                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] transition-all duration-500 
+                                                                        ${step.done ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 
+                                                                          step.active ? 'bg-blue-500 animate-pulse' : 'bg-slate-800 border border-slate-700'}`}>
+                                                                        {step.done ? '✓' : step.icon}
+                                                                    </div>
+                                                                    <span className={`text-[8px] font-black uppercase tracking-tighter ${step.active || step.done ? 'text-white' : 'text-slate-600'}`}>
+                                                                        {step.label}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                        <p className="text-[9px] text-slate-500 italic leading-snug">
-                                                            Priority modulated by {event.category || 'Unknown'} baseline thresholds and temporal decay factors.
+                                                    </div>
+
+                                                    {/* AI Explanation Layer (Restored) */}
+                                                    <div className="mb-4 bg-slate-900/50 p-3 rounded border border-slate-700/50 shadow-inner">
+                                                        <div className="flex items-center justify-between mb-2 pb-1 border-b border-white/5">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <BarChart2 size={12} className="text-cyan-400" />
+                                                                <span className="text-[10px] uppercase font-black text-slate-300 tracking-widest">AI Reasoning Breakdown</span>
+                                                            </div>
+                                                            <span className="text-[10px] text-cyan-400 font-mono font-bold bg-cyan-400/10 px-1.5 rounded">REL: {((event.confidence_score || 0) * 100).toFixed(0)}%</span>
+                                                        </div>
+                                                        <div className="space-y-2 mb-2 pt-1">
+                                                            {[
+                                                                { label: 'NLP (Social)', key: 'nlp_contribution', color: 'bg-indigo-500', icon: '💬' },
+                                                                { label: 'Vision (AI)', key: 'vision_contribution', color: 'bg-purple-500', icon: '👁️' },
+                                                                { label: 'Weather', key: 'weather_contribution', color: 'bg-cyan-500', icon: '☁️' },
+                                                                { label: 'IoT Sensors', key: 'sensor_contribution', color: 'bg-amber-500', icon: '📡' }
+                                                            ].map(item => {
+                                                                const val = event.xai_breakdown?.[item.key] ?? 
+                                                                    (item.key === 'nlp_contribution' ? 40 : 
+                                                                     item.key === 'vision_contribution' ? 30 : 
+                                                                     item.key === 'weather_contribution' ? 20 : 10);
+                                                                return (
+                                                                    <div key={item.key} className="flex flex-col gap-1">
+                                                                        <div className="flex justify-between items-center text-[9px] font-bold">
+                                                                            <span className="text-slate-400 flex items-center gap-1">
+                                                                                <span>{item.icon}</span> {item.label}
+                                                                            </span>
+                                                                            <span className="text-white">{val}%</span>
+                                                                        </div>
+                                                                        <div className="bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                                                                            <motion.div 
+                                                                                initial={{ width: 0 }}
+                                                                                animate={{ width: `${val}%` }}
+                                                                                className={`h-full ${item.color} shadow-[0_0_8px_rgba(255,255,255,0.2)]`}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                        <p className="text-[9px] text-slate-500 font-medium leading-tight border-t border-white/5 pt-2 mt-1">
+                                                            <span className="text-cyan-500 font-black mr-1">ANALYSIS:</span>
+                                                            Priority modulated by {event.category || 'Unknown'} baseline risk and multi-modal verification.
                                                         </p>
                                                     </div>
 

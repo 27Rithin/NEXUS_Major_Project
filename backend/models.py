@@ -35,6 +35,7 @@ class DisasterEvent(Base):
     is_location_overridden = Column(Boolean, default=False)
     review_deadline = Column(DateTime(timezone=True), nullable=True)
     decision_log = Column(JSONB, default=[], server_default='[]')
+    xai_breakdown = Column(JSONB, default={}, server_default='{}')
     vision_status = Column(String(50), default="PENDING") # PENDING, PROCESSING, COMPLETE, SKIPPED, FAILED
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

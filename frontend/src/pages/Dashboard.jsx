@@ -16,17 +16,52 @@ export default function Dashboard() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [activeRoute, setActiveRoute] = useState(null);
   const [wsStatus, setWsStatus] = useState('connecting'); // 'connecting', 'connected', 'disconnected'
+  const [apiHealth, setApiHealth] = useState('unknown'); // 'healthy', 'degraded', 'offline'
+  const [aiStatus, setAiStatus] = useState('active'); // 'active', 'busy', 'standby'
   const [showHeatmap, setShowHeatmap] = useState(false);
   const { user, logout } = useContext(AuthContext);
   const { addToast } = useToast();
 
-  const fetchEvents = useCallback(async () => {
+  const checkApiHealth = useCallback(async () => {
+    try {
+      const startTime = Date.now();
+      const res = await fetch(`${config.API_URL}/health`);
+      const latency = Date.now() - startTime;
+      
+      if (res.ok) {
+        setApiHealth(latency > 500 ? 'degraded' : 'healthy');
+      } else {
+        setApiHealth('offline');
+      }
+    } catch {
+      setApiHealth('offline');
+    }
+  }, []);
+
+  useEffect(() => {
+    checkApiHealth();
+    const interval = setInterval(checkApiHealth, 10000); // Check every 10s
+    return () => clearInterval(interval);
+  }, [checkApiHealth]);
+
+  const fetchEvents = useCallback(async (isInitial = false) => {
     setLoading(true);
     try {
       const data = await EventService.getEvents();
-      if (data) setEvents(data);
+      if (data) {
+        setEvents(data);
+        // MISSION CRITICAL RECOVERY: On restart/refresh, auto-select the highest priority active mission
+        if (isInitial) {
+          const activeMission = data.find(e => e.status === 'In Progress') || data.find(e => e.severity_level === 'CRITICAL');
+          if (activeMission) {
+            console.log("[RECOVERY] Restoring active mission state for:", activeMission.id);
+            setSelectedEvent(activeMission);
+          }
+        }
+      }
     } catch (error) {
-      addToast(error.message || "Failed to fetch active events", "error");
+      setApiHealth('offline');
+      addToast(error.message || "TELEMETRY OFFLINE: Retrying connection...", "error");
     }
     setLoading(false);
   }, [addToast]);
@@ -34,7 +69,7 @@ export default function Dashboard() {
   // WebSocket logic moved to Sidebar.jsx to ensure strict real-time injection and avoid duplicates.
 
   useEffect(() => {
-    fetchEvents();
+    fetchEvents(true);
   }, [fetchEvents]);
 
   useEffect(() => {
@@ -147,14 +182,43 @@ export default function Dashboard() {
             <svg className="w-6 h-6 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
             <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">NEXUS NODE v2.0</span>
           </div>
-          <div className="flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/50">
-            {wsStatus === 'connected' ? (
-              <><span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse"></span> <span className="text-green-400">Live Monitoring</span></>
-            ) : wsStatus === 'connecting' ? (
-              <><span className="w-2 h-2 rounded-full bg-yellow-500 animate-spin"></span> <span className="text-yellow-400">Connecting...</span></>
-            ) : (
-              <><span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span> <span className="text-red-400">Disrupted</span></>
-            )}
+          <div className="flex items-center gap-4 bg-slate-800/40 px-4 py-1.5 rounded-xl border border-white/5 shadow-inner">
+            {/* WebSocket Health */}
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[8px] text-slate-500 uppercase font-black tracking-widest">WS-GATEWAY</span>
+              <div className="flex items-center gap-1.5 min-w-[80px]">
+                <div className={`w-1.5 h-1.5 rounded-full ${wsStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : wsStatus === 'connecting' ? 'bg-amber-500' : 'bg-red-500'}`} />
+                <span className={`text-[10px] font-bold ${wsStatus === 'connected' ? 'text-emerald-400' : wsStatus === 'connecting' ? 'text-amber-400' : 'text-red-400'}`}>
+                  {wsStatus === 'connected' ? 'STABLE' : wsStatus === 'connecting' ? 'SYNCING' : 'OFFLINE'}
+                </span>
+              </div>
+            </div>
+            
+            <div className="w-[1px] h-6 bg-white/10" />
+
+            {/* API Health */}
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[8px] text-slate-500 uppercase font-black tracking-widest">API-CORE</span>
+              <div className="flex items-center gap-1.5 min-w-[70px]">
+                <div className={`w-1.5 h-1.5 rounded-full ${apiHealth === 'healthy' ? 'bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]' : apiHealth === 'degraded' ? 'bg-amber-500' : 'bg-red-600'}`} />
+                <span className={`text-[10px] font-bold ${apiHealth === 'healthy' ? 'text-cyan-400' : apiHealth === 'degraded' ? 'text-amber-400' : 'text-red-400'}`}>
+                  {apiHealth === 'healthy' ? 'OPERATIONAL' : apiHealth === 'degraded' ? 'DEGRADED' : 'OFFLINE'}
+                </span>
+              </div>
+            </div>
+
+            <div className="w-[1px] h-6 bg-white/10" />
+
+            {/* AI Engine Health */}
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[8px] text-slate-500 uppercase font-black tracking-widest">NEXUS-AI</span>
+              <div className="flex items-center gap-1.5 min-w-[70px]">
+                <div className={`w-1.5 h-1.5 rounded-full ${aiStatus === 'active' ? 'bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.6)]' : 'bg-slate-500'}`} />
+                <span className={`text-[10px] font-bold ${aiStatus === 'active' ? 'text-purple-400' : 'text-slate-400'}`}>
+                  {aiStatus === 'active' ? 'COGNITIVE' : 'STANDBY'}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -51,11 +51,42 @@ class SocialMediaAgent:
         # Cap score at 1.0
         nlp_confidence_score = min(1.0, score)
         
+        # Fake News Detector (Production Requirement)
+        reliability_multiplier = 1.0
+        fake_keywords = ["forwarded", "spam", "fake", "hoax", "test post", "ignore", "prank"]
+        if any(fw in text_lower for fw in fake_keywords):
+            reliability_multiplier = 0.2
+            logger.info(f"Potential fake news detected in text: {text[:50]}...")
+
         return {
             "category": predicted_category,
-            "nlp_score": round(nlp_confidence_score, 2),
-            "is_actionable": nlp_confidence_score >= 0.4
+            "nlp_score": round(nlp_confidence_score * reliability_multiplier, 2),
+            "is_actionable": nlp_confidence_score >= 0.4 and reliability_multiplier > 0.5,
+            "reliability_label": "LOW" if reliability_multiplier < 0.5 else "HIGH"
         }
+        
+    @classmethod
+    def verify_crowd_consensus(cls, db, lat: float, lng: float, radius_km: float = 2.0) -> float:
+        """
+        Crowd Verification (Requirement): 
+        If multiple posts sharing similar coordinates exist, boost confidence.
+        """
+        import datetime
+        from sqlalchemy import func
+        one_hour_ago = datetime.datetime.utcnow() - datetime.timedelta(hours=1)
+        # Simplified coordinate bounding box for "Nearby"
+        nearby_count = db.query(models.DisasterEvent).filter(
+            models.DisasterEvent.created_at >= one_hour_ago,
+            models.DisasterEvent.status != models.EventStatus.RESOLVED,
+            # Rough bounding box ~2km
+            func.abs(models.DisasterEvent.location.ST_Y() - lat) < 0.02 if hasattr(models.DisasterEvent.location, 'ST_Y') else True,
+        ).count()
+
+        if nearby_count >= 3:
+            return 0.95 # High Crowd Consensus
+        elif nearby_count >= 1:
+            return 0.75 # Supported by others
+        return 0.5 # Single report / Unverified source
         
     @classmethod
     def generate_mock_post(cls) -> str:

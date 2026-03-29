@@ -27,14 +27,28 @@ const HeatmapLayer = memo(function HeatmapLayer({ points }) {
     const map = useMap();
     useEffect(() => {
         if (!points || points.length === 0) return;
-        const heat = L.heatLayer(points, {
-            radius: 25,
-            blur: 15,
+        
+        // Leaflet.heat expects [lat, lng, intensity]
+        // We ensure the point format is exactly what the plugin needs
+        const heatLayer = L.heatLayer(points, {
+            radius: 35,
+            blur: 20,
             maxZoom: 17,
-            gradient: { 0.4: '#3b82f6', 0.6: '#06b6d4', 0.7: '#10b981', 0.8: '#f59e0b', 1.0: '#ef4444' }
-        }).addTo(map);
+            minOpacity: 0.4,
+            gradient: {
+                0.2: "blue",
+                0.4: "lime",
+                0.7: "orange",
+                1.0: "red"
+            }
+        });
+        
+        heatLayer.addTo(map);
+        
         return () => {
-            map.removeLayer(heat);
+            if (map.hasLayer(heatLayer)) {
+                map.removeLayer(heatLayer);
+            }
         };
     }, [map, points]);
     return null;
@@ -224,9 +238,25 @@ function AnimatedRoute({ route, severity = 'LOW' }) {
                             <span className="text-slate-400">TIME:</span>
                             <span className="text-cyan-400 font-bold">~{Math.round(route.estimated_time_mins || 0)} MIN</span>
                         </div>
+                        <div className="mt-1 flex items-center gap-1 text-[8px] text-slate-500 font-bold uppercase tracking-tighter">
+                            <span>Flow Direction: START ➝ DEST</span>
+                        </div>
                     </div>
                 </Tooltip>
             </Polyline>
+            
+            {/* Direction Arrows Overlay */}
+            <Polyline 
+                positions={pathCoords} 
+                pathOptions={{ 
+                    color: '#ffffff', 
+                    weight: 2, 
+                    opacity: 0.5, 
+                    dashArray: '1, 20', 
+                    lineCap: 'square',
+                    className: speedClass // Reuse movement animation for arrows
+                }} 
+            />
             
             {/* Start Marker */}
             <Marker position={originPos} zIndexOffset={50000} icon={L.divIcon({
@@ -443,8 +473,34 @@ const NexusMap = memo(function NexusMap({ events, selectedEvent, activeRoute, on
                                         <span className="text-slate-200">{event.status}</span>
                                     </div>
 
-                                    {/* Animated Progress Bar for Severity */}
-                                    <div className="mt-1 flex flex-col gap-2">
+                                    {/* AI Reasoning Breakdown (XAI) */}
+                                    <div className="mt-2 pt-2 border-t border-white/5">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="text-slate-400 uppercase tracking-wider text-[10px] font-bold italic">AI Explainer</span>
+                                            <span className="text-[9px] text-cyan-400 font-mono font-bold">CONF: {Math.round((event.confidence_score || 0) * 100)}%</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-1 text-[9px]">
+                                            {[
+                                                { label: 'NLP', val: event.xai_breakdown?.nlp_contribution ?? 40, color: 'bg-indigo-500' },
+                                                { label: 'VIS', val: event.xai_breakdown?.vision_contribution ?? 30, color: 'bg-purple-500' },
+                                                { label: 'WTH', val: event.xai_breakdown?.weather_contribution ?? 20, color: 'bg-cyan-500' },
+                                                { label: 'IoT', val: event.xai_breakdown?.sensor_contribution ?? 10, color: 'bg-amber-500' }
+                                            ].map(item => (
+                                                <div key={item.label} className="flex flex-col gap-0.5">
+                                                    <div className="flex justify-between items-center text-slate-400">
+                                                        <span>{item.label}</span>
+                                                        <span className="text-white font-bold">{item.val}%</span>
+                                                    </div>
+                                                    <div className="bg-slate-800 rounded-full h-1 overflow-hidden shadow-inner">
+                                                        <div className={`h-full ${item.color}`} style={{ width: `${item.val}%` }}></div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Progress Bar for Priority */}
+                                    <div className="mt-2 flex flex-col gap-2">
                                         <div>
                                             <div className="flex justify-between items-center mb-1">
                                                 <span className="text-slate-400 uppercase tracking-wider text-[10px] font-bold">Priority Score</span>

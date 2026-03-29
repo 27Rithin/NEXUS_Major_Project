@@ -10,11 +10,11 @@ class DecisionEngine:
     and temporal decay.
     """
     
-    # Weights for the formula as per requirements
-    WEIGHT_NLP = 0.3
+    # Production Weights for Decision Engine
+    WEIGHT_NLP = 0.4
     WEIGHT_VISION = 0.3
     WEIGHT_WEATHER = 0.2
-    WEIGHT_SENSOR = 0.2
+    WEIGHT_SENSOR = 0.1
     
     # Thresholds to trigger auto route generation per category
     DEFAULT_TRIGGER_THRESHOLD = 0.75
@@ -54,15 +54,22 @@ class DecisionEngine:
         Calculates Adjusted Priority and Confidence.
         Includes PENDING_REVIEW escalation and Decision Audit Logging.
         """
-        # Step 1: Raw base priority (0..1)
-        base_priority_0_1 = (
-            (0.3 * nlp_score) + 
-            (0.2 * vision_score_normalized) +
-            (0.15 * weather_score) +
-            (0.15 * sensor_score) +
-            (0.1 * nearby_reports_score) +
-            (0.1 * historical_risk_score)
+        # Step 1: Raw base priority (0..1) using production-grade weights
+        # We also factor in surrounding intelligence (nearby/historical) but the 4 core pillars take precedence
+        core_pillar_sum = (
+            (cls.WEIGHT_NLP * nlp_score) + 
+            (cls.WEIGHT_VISION * vision_score_normalized) +
+            (cls.WEIGHT_WEATHER * weather_score) +
+            (cls.WEIGHT_SENSOR * sensor_score)
         )
+        
+        # Contextual intelligence (weighted at 10% of total)
+        context_sum = (
+            (0.05 * nearby_reports_score) + 
+            (0.05 * historical_risk_score)
+        )
+        
+        base_priority_0_1 = core_pillar_sum + context_sum
         
         # Step 2: Explicit confidence (0..1) based on the 4 core modalities.
         conf_nlp = 0.25 if nlp_score > 0 else 0.0
@@ -90,8 +97,6 @@ class DecisionEngine:
         # Threshold based on category
         threshold = cls.CATEGORY_THRESHOLDS.get(category, cls.DEFAULT_TRIGGER_THRESHOLD)
 
-        # Fix 2: PENDING_REVIEW Rule
-        # If priority >= 7 AND confidence < 0.6 → PENDING_REVIEW
         if priority_score_10 >= 7.0 and confidence_score < 0.6:
             status = models.EventStatus.PENDING_REVIEW
             severity = "UNVERIFIED"
@@ -108,6 +113,16 @@ class DecisionEngine:
             status_message = "Situation under monitoring. Stay alert."
             color = "ORANGE"
 
+        # Step 5: Explainable AI (XAI) Contribution Calculation
+        # We calculate how much each pillar contributed to the CORE part of the score
+        total_contribution = core_pillar_sum if core_pillar_sum > 0 else 1.0
+        xai_breakdown = {
+            "nlp_contribution": round((cls.WEIGHT_NLP * nlp_score / total_contribution) * 100, 1) if core_pillar_sum > 0 else 25.0,
+            "vision_contribution": round((cls.WEIGHT_VISION * vision_score_normalized / total_contribution) * 100, 1) if core_pillar_sum > 0 else 25.0,
+            "weather_contribution": round((cls.WEIGHT_WEATHER * weather_score / total_contribution) * 100, 1) if core_pillar_sum > 0 else 25.0,
+            "sensor_contribution": round((cls.WEIGHT_SENSOR * sensor_score / total_contribution) * 100, 1) if core_pillar_sum > 0 else 25.0,
+        }
+
         decision_data = {
             "priority_score": priority_score_10,
             "confidence_score": round(confidence_score, 2),
@@ -116,7 +131,8 @@ class DecisionEngine:
             "color": color,
             "status": status,
             "review_deadline": review_deadline,
-            "trigger_logistics": trigger_logistics and confidence_score >= threshold, # requirement from Fix 2/3
+            "trigger_logistics": trigger_logistics and confidence_score >= threshold,
+            "xai_breakdown": xai_breakdown,
             "breakdown": {
                 "base_priority": round(base_priority_0_1, 2),
                 "decay_factor": round(decay_factor, 2),

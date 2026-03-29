@@ -29,6 +29,7 @@ class EventResponse(EventBase):
     override_lng: Optional[float] = None
     override_timestamp: Optional[datetime] = None
     is_location_overridden: bool = False
+    xai_breakdown: Dict[str, float] = {}
     created_at: datetime
     updated_at: datetime
 

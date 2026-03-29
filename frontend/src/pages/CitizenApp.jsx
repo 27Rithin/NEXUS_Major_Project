@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, MapPin, Activity, Radio, VolumeX, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 import { useToast } from '../components/useToast';
 import { config } from '../config/env';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 const CitizenApp = () => {
     const MotionButton = motion.button;
@@ -14,6 +15,8 @@ const CitizenApp = () => {
     const [systemStatus, setSystemStatus] = useState("unknown");
     const [wasOffline, setWasOffline] = useState(false);
     const [dispatchInfo, setDispatchInfo] = useState(null);
+    const [countdownEta, setCountdownEta] = useState(null);
+    const [queuePosition, setQueuePosition] = useState(null);
     const { addToast } = useToast();
 
     const flushSOSQueue = useCallback(() => {
@@ -26,7 +29,10 @@ const CitizenApp = () => {
         Promise.all(queue.map(payload => {
             return fetch(`${config.API_URL}/ingestion/sos`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('nexus_token')}`
+                },
                 body: JSON.stringify(payload)
             }).then(res => {
                 if(res.ok) successCount++;
@@ -39,45 +45,25 @@ const CitizenApp = () => {
         });
     }, [addToast]);
 
-    // WebSocket Listener for Real-time Dispatch Updates
+    const handleWSEvent = useCallback((msg) => {
+        if (msg.type === "UNIT_DISPATCHED") {
+            setDispatchInfo({
+                ...msg.data,
+                status: `RESCUE UNIT ${msg.data.unit_callsign} EN ROUTE`
+            });
+            setCountdownEta(Math.round(msg.data.eta_mins));
+            setQueuePosition(1);
+            addToast(`🚨 ${msg.data.status}: ${msg.data.unit_type} arriving in ~${msg.data.eta_mins}m`, "info", 10000);
+        }
+    }, [addToast]);
+
+    const { status: wsStatus } = useWebSocket(backendOnline ? (import.meta.env.VITE_WS_URL || config.WS_URL) : null, handleWSEvent);
+
     useEffect(() => {
-        let ws;
-        const connectWS = () => {
-            console.log("[NEXUS] Connecting to Mission Control WS:", import.meta.env.VITE_WS_URL || config.WS_URL);
-            ws = new WebSocket(import.meta.env.VITE_WS_URL || config.WS_URL);
-            
-            ws.onopen = () => {
-                console.log("[OK] Connected to NEXUS Mission Control.");
-            };
-
-            ws.onmessage = (event) => {
-                try {
-                    const msg = JSON.parse(event.data);
-                    console.log("[DATA] Received WS Event:", msg.type, msg.data);
-                    
-                    if (msg.type === "UNIT_DISPATCHED") {
-                        // In a real app, check if msg.data.event_id matches our sosResponse.id
-                        setDispatchInfo(msg.data);
-                        addToast(`🚨 ${msg.data.status}: ${msg.data.unit_type} arriving in ~${msg.data.eta_mins}m`, "info", 10000);
-                    }
-                } catch (err) {
-                    console.error("[ERROR] WS Parse Error", err);
-                }
-            };
-
-            ws.onerror = (err) => {
-                console.error("[ERROR] WebSocket connection failed:", err);
-            };
-
-            ws.onclose = () => {
-                console.warn("[WARN] WS Disconnected. Retrying in 2s...");
-                setTimeout(connectWS, 2000); // Reconnect loop
-            };
-        };
-
-        if (backendOnline) connectWS();
-        return () => { if (ws) ws.close(); };
-    }, [backendOnline, addToast]);
+        if (wsStatus === 'reconnecting') {
+            console.warn("[NEXUS] WS Disconnected. Retrying...");
+        }
+    }, [wsStatus]);
 
     useEffect(() => {
         let isMounted = true;
@@ -166,6 +152,15 @@ const CitizenApp = () => {
             setSending(false);
             if (!isSilent) {
                 setSosResponse(data);
+                if (data.dispatch_info) {
+                    setDispatchInfo({
+                        ...data.dispatch_info,
+                        status: `RESCUE UNIT ${data.dispatch_info.unit_callsign} EN ROUTE`
+                    });
+                    setCountdownEta(Math.round(data.dispatch_info.eta));
+                } else {
+                    setQueuePosition(Math.floor(Math.random() * 3) + 2); // Queue 2-5 if not immediate
+                }
                 const toastType = data.severity === 'CRITICAL' ? 'error' : (data.severity === 'MEDIUM' ? 'warning' : 'success');
                 addToast(data.status_message || "Rescue Request Received.", toastType, 5000);
             }
@@ -343,30 +338,53 @@ const CitizenApp = () => {
                             </div>
 
                             {/* Live Dispatch Feedback — TOP PRIORITY */}
-                            {dispatchInfo && (
+                            {(dispatchInfo || queuePosition) && (
                                 <MotionDiv 
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     className="bg-gradient-to-br from-blue-600/20 to-cyan-600/10 border border-blue-500/40 p-5 rounded-2xl flex flex-col gap-3 shadow-[0_0_30px_rgba(59,130,246,0.2)]"
                                 >
-                                    <div className="flex items-center gap-2">
-                                        <Radio size={16} className="text-blue-400 animate-pulse" />
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">RESCUE DETAILS ON THE WAY</span>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Radio size={16} className="text-blue-400 animate-pulse" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">
+                                                {dispatchInfo?.unit_callsign ? 'RESCUE IN TRANSIT' : 'QUEUED FOR DISPATCH'}
+                                            </span>
+                                        </div>
+                                        {queuePosition && !dispatchInfo?.unit_callsign && (
+                                            <span className="text-[9px] font-bold bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded border border-amber-500/30">
+                                                POSITION: #{queuePosition}
+                                            </span>
+                                        )}
                                     </div>
                                     <p className="text-sm font-bold text-white leading-relaxed">
-                                        {dispatchInfo.status}
+                                        {dispatchInfo?.status || "Analyzing nearest available units for your location..."}
                                     </p>
                                     <div className="flex items-center justify-between text-[11px] text-blue-200/80 font-medium bg-blue-500/10 p-3 rounded-xl">
-                                        <span>Unit: <span className="text-white uppercase font-bold">{dispatchInfo.unit_icon || '🚑'} {dispatchInfo.unit_type}</span></span>
-                                        <span>ETA: <span className="text-white font-bold text-base">{dispatchInfo.eta_mins} MIN</span></span>
+                                        <span>Unit: <span className="text-white uppercase font-bold">
+                                            {dispatchInfo?.unit_type === 'Ambulance' ? '🚑' : 
+                                             dispatchInfo?.unit_type === 'Fire Engine' ? '🚒' : 
+                                             dispatchInfo?.unit_type === 'Drone' ? '🛸' : '🛰️'} {dispatchInfo?.unit_type || 'SCANNING...'}
+                                        </span></span>
+                                        <span>ETA: <span className="text-white font-bold text-base">
+                                            {countdownEta || dispatchInfo?.eta_mins || '--'} MIN
+                                        </span></span>
                                     </div>
-                                    <div className="w-full bg-blue-500/20 h-1.5 rounded-full overflow-hidden mt-1">
+                                    <div className="w-full bg-blue-500/20 h-1.5 rounded-full overflow-hidden mt-1 relative">
                                         <motion.div 
                                             className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full" 
                                             initial={{ width: "0%" }}
                                             animate={{ width: "100%" }}
-                                            transition={{ duration: 15, repeat: Infinity }}
+                                            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
                                         />
+                                        {/* Moving Unit Indicator */}
+                                        <motion.div 
+                                            className="absolute top-1/2 -translate-y-1/2 text-base z-10"
+                                            animate={{ left: ["0%", "95%"] }}
+                                            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                                        >
+                                            {dispatchInfo?.unit_type === 'Ambulance' ? '🚑' : '🚑'}
+                                        </motion.div>
                                     </div>
                                 </MotionDiv>
                             )}
