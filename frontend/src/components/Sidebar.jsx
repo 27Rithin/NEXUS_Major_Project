@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, memo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react';
 import { AlertTriangle, Crosshair, Map as MapIcon, ShieldAlert, Loader2, CheckCircle2, Clock, Navigation, Filter, BarChart2, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DisasterTypeConfig } from '../config/disasterTypes';
