@@ -168,6 +168,12 @@ const CitizenApp = () => {
         })
         .catch((err) => {
             setSending(false);
+            // SYNC STATUS: If the network actually failed right now, update the health badge immediately
+            if (err.message === "Failed to fetch") {
+                setBackendOnline(false);
+                setSystemStatus("down");
+            }
+
             const queue = JSON.parse(localStorage.getItem('nexus_sos_queue') || '[]');
             queue.push(payload);
             localStorage.setItem('nexus_sos_queue', JSON.stringify(queue));
