@@ -77,40 +77,41 @@ const CitizenApp = () => {
 
         const checkHealth = async () => {
             try {
-                // Perform a deep health check
-                const res = await fetch(`${config.API_URL}/health`);
+                const startTime = Date.now();
+                // config.API_URL now ends in '/', so we use 'health' directly
+                const res = await fetch(`${config.API_URL}health`);
                 const data = await res.json();
+                const latency = Date.now() - startTime;
 
                 if (!isMounted) return;
 
-                if (data.status === "healthy") {
+                if (res.ok && data.status === "healthy") {
                     successCount++;
                     failCount = 0;
                     
-                    // ONLY declare ONLINE if we have at least 2 consecutive successful pings
-                    // This prevents "Flicker/Flap" loops during bad 4G/Wifi
-                    if (successCount >= 2) {
-                        if (!backendOnline) {
-                            console.log("Network stabilized. Restoring operations.");
-                            setBackendOnline(true);
-                        }
+                    // RENDER FREE TIER DETECTION: If latency is high, it's waking up
+                    if (latency > 2500 && systemStatus === 'unknown') {
+                        setSystemStatus("initializing");
+                    } else if (successCount >= 1) { // Faster stabilization
+                        if (!backendOnline) setBackendOnline(true);
                         setSystemStatus("healthy");
                     }
                 } else {
                     successCount = 0;
                     failCount++;
                 }
-            } catch {
+            } catch (err) {
                 if (!isMounted) return;
                 successCount = 0;
-                setBackendOnline(false);
-                setSystemStatus("down");
+                // Don't flip to offline immediately; allow 3 fails for transient blips
                 failCount++;
+                if (failCount >= 3) {
+                    setBackendOnline(false);
+                    setSystemStatus("down");
+                }
             }
 
-            // True exponential backoff for checking: 5s, 10s, 20s, 30s
-            // If we are currently failing, check less often to save battery/bandwidth
-            const nextInterval = Math.min(5000 * Math.pow(2, failCount), 30000);
+            const nextInterval = Math.min(5000 * Math.pow(2, Math.max(0, failCount - 2)), 30000);
             timer = setTimeout(checkHealth, nextInterval);
         };
 

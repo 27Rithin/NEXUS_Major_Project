@@ -26,16 +26,17 @@ export default function Dashboard() {
   const checkApiHealth = useCallback(async () => {
     try {
       const startTime = Date.now();
-      const res = await fetch(`${config.API_URL}/health`);
+      // Ensure we don't have double slashes if API_URL ends in /
+      const healthUrl = `${config.API_URL.replace(/\/+$/, '')}/health`;
+      const res = await fetch(healthUrl);
       const latency = Date.now() - startTime;
       
       if (res.ok) {
         setFailCount(0); // Reset on success
-        // RENDER FREE TIER DETECTION: If latency is > 2s or it's the first hit, it's waking up
-        if (latency > 2000 && apiHealth === 'unknown') {
+        if (latency > 2500 && apiHealth === 'unknown') {
           setApiHealth('waking_up');
         } else {
-          setApiHealth(latency > 800 ? 'degraded' : 'healthy');
+          setApiHealth(latency > 1000 ? 'degraded' : 'healthy');
         }
       } else {
         setFailCount(prev => prev + 1);

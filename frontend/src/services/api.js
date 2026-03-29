@@ -18,12 +18,13 @@ api.interceptors.request.use((reqConfig) => {
 }, (error) => Promise.reject(error));
 
 // Add a response interceptor to handle session expiry (401)
-// IMPORTANT: Skip redirect for the login endpoint itself — let AuthContext handle it.
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        const isLoginRequest = error.config?.url?.includes('/auth/login');
-        if (error.response && error.response.status === 401 && !isLoginRequest) {
+        const isLoginRequest = error.config?.url?.includes('auth/login');
+        const isCitizenPage = window.location.pathname.includes('/citizen');
+        
+        if (error.response && error.response.status === 401 && !isLoginRequest && !isCitizenPage) {
             console.warn("Session expired or invalid. Redirecting to login...");
             localStorage.removeItem('nexus_token');
             localStorage.removeItem('nexus_user');

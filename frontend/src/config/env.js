@@ -18,13 +18,15 @@ if (!rawUrl) {
     if (!baseApiUrl.endsWith('/api')) {
         baseApiUrl = `${baseApiUrl}/api`;
     }
+    // ADD TRAILING SLASH: Essential for Axios relative path resolution
+    baseApiUrl = `${baseApiUrl}/`;
 } else {
     // Bare hostname (e.g., "nexus-backend" or "nexus-backend.onrender.com")
     // Add .onrender.com suffix if it's a Render internal hostname with no TLD
     if (!rawUrl.includes('.')) {
         rawUrl = `${rawUrl}.onrender.com`;
     }
-    baseApiUrl = `https://${rawUrl}/api`;
+    baseApiUrl = `https://${rawUrl}/api/`;
 }
 
 // Automatically construct WebSocket URL from API URL
