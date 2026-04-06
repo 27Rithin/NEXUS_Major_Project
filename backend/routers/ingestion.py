@@ -70,8 +70,10 @@ async def _process_event_impl(db: Session, event: models.DisasterEvent, nlp_scor
     db.commit()
     db.refresh(event)
 
+    # 🔴 Standardized Broadcast Payload (Fresh from DB)
     event_payload = {
         "id": str(event.id),
+        "idempotency_key": str(event.id),
         "title": event.title or "Untitled Incident",
         "description": event.description or "",
         "category": event.category or "SOS",
@@ -84,6 +86,7 @@ async def _process_event_impl(db: Session, event: models.DisasterEvent, nlp_scor
         "created_at": event.created_at.isoformat()
     }
     await manager.broadcast(json.dumps({"type": "new_incident", "data": event_payload}))
+    logger.info(f"📢 BROADCAST SENT [Process-Flow] for Event: {event.id}")
 
 async def process_event(event_id: str, **kwargs):
     from database import SessionLocal
@@ -159,19 +162,28 @@ async def receive_sos(request: SOSRequest, db: Session = Depends(get_db)):
             new_event.status = models.EventStatus.IN_PROGRESS
             dispatch_info = {"unit_callsign": available_unit.callsign, "eta": route_plan["estimated_time_mins"]}
 
+    # 🔴 COMMIT → REFRESH → BROADCAST Lifecycle
     db.commit()
     db.refresh(new_event)
+    logger.info(f"✅ EVENT CREATED: {new_event.id} | Status: {new_event.status.value}")
 
     event_payload = {
         "id": str(new_event.id),
+        "idempotency_key": str(new_event.id),
+        "title": new_event.title or "SOS Alert",
+        "description": new_event.description or "",
         "location": {"lat": float(request.lat), "lng": float(request.lng)},
         "category": new_event.category,
+        "priority_score": float(new_event.priority_score or 0.0),
+        "confidence_score": float(new_event.confidence_score or 0.0),
         "severity_level": new_event.severity_level,
+        "status_message": f"🚨 SOS: {new_event.severity_level} incident reported",
         "status": new_event.status.value,
         "created_at": new_event.created_at.isoformat()
     }
+
     await manager.broadcast(json.dumps({"type": "new_incident", "data": event_payload}))
-    logger.info(f"📢 BROADCAST SENT for Event: {new_event.id}")
+    logger.info(f"📢 BROADCAST SENT [SOS-Flow] for Event: {new_event.id}")
 
     return {
         "message": "Rescue Request Received",

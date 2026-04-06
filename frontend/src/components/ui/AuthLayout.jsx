@@ -40,8 +40,8 @@ export const AuthLayout = ({ children, title, subtitle }) => {
                 />
             </div>
 
-            <div className="container mx-auto px-4 py-8 relative z-10 w-full max-w-6xl flex items-center justify-center min-h-screen">
-                <div className="w-full grid lg:grid-cols-2 gap-0 items-stretch rounded-3xl bg-slate-900/40 backdrop-blur-xl border border-white/10 shadow-2xl overflow-hidden min-h-[600px] relative">
+            <div className="w-full max-w-5xl mx-auto px-6 flex items-center justify-center min-h-screen relative z-10 py-10">
+                <div className="w-full grid lg:grid-cols-2 gap-0 items-stretch rounded-[32px] bg-slate-900/40 backdrop-blur-xl border border-white/10 shadow-2xl overflow-hidden min-h-[650px] relative">
 
                     {/* Inner glowing core behind everything in the card */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-indigo-500/5 blur-[80px] pointer-events-none" />

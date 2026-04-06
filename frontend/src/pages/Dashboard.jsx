@@ -39,22 +39,62 @@ export default function Dashboard() {
 
   // 🛰️ WebSocket Listener (Instant SOS Alerts on Dashboard)
   const handleWSMessage = useCallback((msg) => {
-    if (msg.type === "new_incident") {
-      addToast(`🔴 NEW SOS RECEIVED: ${msg.data.severity_level}`, "error", 10000);
-      
-      // 🔥 AUTO-FOCUS LOGIC: Select the new incident immediately to center the map
-      setSelectedEvent(msg.data);
-      fetchEvents(); 
+    try {
+      if (msg.type === "new_incident") {
+        console.info("⚡ WS Message Received [new_incident]:", msg.data);
+
+        // 🔴 Guard Clause: Validate Payload Integrity
+        if (
+          !msg.data?.id || 
+          typeof msg.data.location?.lat !== "number" || 
+          typeof msg.data.location?.lng !== "number"
+        ) {
+          console.error("❌ Invalid WS Payload (Schema Mismatch):", msg);
+          return;
+        }
+
+        // 🔴 Zero-Refetch State Injection with sorting and idempotency
+        setEvents(prev => {
+          // Idempotency Filter (Prevent Duplicates Across Layers)
+          if (prev.some(e => e.id === msg.data.id || e.idempotency_key === msg.data.idempotency_key)) {
+            return prev;
+          }
+          
+          console.info("✅ Event Added to State [Zero-Refetch]");
+          // Prepend new incident (Most Recent First)
+          return [msg.data, ...prev];
+        });
+
+        addToast(`🔴 NEW SOS RECEIVED: ${msg.data.severity_level}`, "error", 10000);
+        
+        // 🔥 AUTO-FOCUS LOGIC: Select the new incident immediately to center the map
+        setSelectedEvent(msg.data);
+      }
+    } catch (err) {
+      console.error("❌ Dashboard WebSocket Error:", err);
     }
-  }, [addToast, fetchEvents]);
+  }, [addToast]);
 
-  useWebSocket(config.WS_URL, handleWSMessage);
-
+  const { status: wsStatus } = useWebSocket(config.WS_URL, handleWSMessage);
+  
+  // Console awareness for connection status
   useEffect(() => {
-    fetchEvents(true);
-    const inv = setInterval(() => fetchEvents(false), 8000);
+    console.info(`🌐 NEXUS WS Status: ${wsStatus.toUpperCase()}`);
+  }, [wsStatus]);
+
+  // 🔴 Conditional Polling Fallback (Only active if WebSocket is down)
+  useEffect(() => {
+    fetchEvents(true); // Initial load
+
+    const inv = setInterval(() => {
+      if (wsStatus !== 'connected') {
+        console.info("🔁 Polling Fallback Mode Active (WS Offline)");
+        fetchEvents(false);
+      }
+    }, 5000);
+
     return () => clearInterval(inv);
-  }, [fetchEvents]);
+  }, [fetchEvents, wsStatus]);
 
   useEffect(() => {
     const fetchRoute = async () => {
@@ -73,7 +113,9 @@ export default function Dashboard() {
   }, [selectedEvent]);
 
   return (
-    <div className="flex flex-col h-screen bg-[#0B0F19] overflow-hidden font-inter text-slate-200">
+    <div className="flex flex-col h-screen bg-[#0B0F19] overflow-hidden font-inter text-slate-200 relative scanline">
+      <div className="vignette" />
+      <div className="flex flex-col flex-1 relative z-10">
       {/* HEADER MATCHING IMAGE 2/3 */}
       <nav className="h-16 glass-panel border-b border-white/5 flex items-center justify-between px-6 z-20 shrink-0 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
         <div className="flex items-center gap-6">
@@ -122,24 +164,35 @@ export default function Dashboard() {
         />
 
         <div className="flex-1 relative">
-          {/* STATS HUD OVERLAY (Orbitron Fonts) */}
-          <div className="absolute top-8 left-1/2 -translate-x-1/2 z-[1000] flex gap-5 w-full px-12 justify-center pointer-events-none">
-            {[ 
-              { label: 'Active Incidents', val: events.length || 0, color: 'blue', icon: Activity, glow: 'blue-500' },
-              { label: 'Critical Alerts', val: events.filter(e => e.severity_level === 'CRITICAL').length, color: 'red', icon: AlertOctagon, glow: 'red-500' },
-              { label: 'Units Deployed', val: events.filter(e => e.status === 'In Progress').length, color: 'emerald', icon: Send, glow: 'emerald-500' },
-              { label: 'Avg Response Time', val: '3m', color: 'purple', icon: Activity, glow: 'purple-500' }
-            ].map((stat, i) => (
-                <div key={i} className="glass-panel rounded-2xl p-4 flex items-center gap-5 shadow-[0_20px_50px_rgba(0,0,0,0.7)] min-w-[210px] pointer-events-auto border-b-4 border-nexus-blue/30" style={{ borderBottomColor: `rgba(var(--${stat.color}-500-rgb), 0.5)` }}>
-                    <div className={`w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/5`}>
-                        <stat.icon size={22} className={`text-${stat.color}-500`} />
-                    </div>
-                    <div>
-                        <h5 className="text-[10px] font-orbitron font-black text-slate-500 uppercase tracking-widest">{stat.label}</h5>
-                        <p className="text-3xl font-orbitron font-black text-white leading-none mt-1 tracking-tighter italic drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{stat.val}</p>
+          <div 
+            className="absolute top-8 left-1/2 -translate-x-1/2 flex justify-center w-full px-8 pointer-events-none" 
+            style={{ zIndex: 'var(--z-overlay)' }}
+          >
+            <div className="grid-dashboard w-full justify-items-center">
+              {[ 
+                { label: 'Active Incidents', val: events.length || 0, color: 'nexus-blue', icon: Activity, glowClass: 'glow-cyan' },
+                { label: 'Critical Alerts', val: events.filter(e => e.severity_level === 'CRITICAL').length, color: 'red-500', icon: AlertOctagon, glowClass: 'glow-red' },
+                { label: 'Units Deployed', val: events.filter(e => e.status === 'In Progress').length, color: 'emerald-500', icon: Send, glowClass: 'glow-emerald' },
+                { label: 'Avg Response Time', val: '3m', color: 'amber-500', icon: Zap, glowClass: 'glow-amber' }
+              ].map((stat, i) => (
+                  <div 
+                      key={i} 
+                      className={`card transition gpu p-4 rounded-2xl pointer-events-auto border-t-2 border-white/5 w-full max-w-[280px] ${stat.glowClass}`}
+                  >
+                    <div className="flex items-center gap-5">
+                        <div className={`w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center border border-white/10`}>
+                            <stat.icon size={22} className={`text-${stat.color}`} />
+                        </div>
+                        <div>
+                            <h5 className="text-[10px] font-orbitron font-bold text-slate-500 uppercase tracking-widest">{stat.label}</h5>
+                            <p className="text-3xl font-orbitron font-black text-white leading-none mt-1 tracking-tighter italic drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                                {stat.val}
+                            </p>
+                        </div>
                     </div>
                 </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           <NexusMap
@@ -150,6 +203,7 @@ export default function Dashboard() {
           />
         </div>
       </div>
+    </div>
     </div>
   );
 }

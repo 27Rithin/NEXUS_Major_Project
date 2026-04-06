@@ -21,8 +21,8 @@ const CitizenApp = () => {
     const [silentMode, setSilentMode] = useState(false);
     const [sosResponse, setSosResponse] = useState(null);
     const [backendOnline, setBackendOnline] = useState(true);
-    const [emergencyState, setEmergencyState] = useState(false);
-    const [dispatchInfo, setDispatchInfo] = useState(null);
+    const [stage, setStage] = useState("IDLE");
+    const [dispatchData, setDispatchData] = useState(null);
     const [countdownEta, setCountdownEta] = useState(null);
     const { addToast } = useToast();
 
@@ -68,106 +68,182 @@ const CitizenApp = () => {
         return () => clearInterval(inv);
     }, []);
 
+    // ✅ WebSocket Event Handler (Centralized & Safe)
     const handleWSEvent = useCallback((msg) => {
-        if (msg.type === "UNIT_DISPATCHED") {
-            setDispatchInfo({
-                ...msg.data,
-                status: `RESCUE UNIT ${msg.data.unit_callsign || ''} EN ROUTE`
-            });
-            setCountdownEta(Math.round(msg.data.eta_mins));
-            addToast("Unit Dispatched! Tracking live...", "success");
+        try {
+            console.info("[WS EVENT]", msg);
+
+            // 🚑 UNIT DISPATCHED EVENT
+            if (msg?.type === "UNIT_DISPATCHED") {
+                setDispatchData(msg.data);
+                setCountdownEta(Math.round(msg.data?.eta_mins || 0));
+                setStage("RESCUE_ACTIVE");
+                addToast("Unit Dispatched! Tracking live...", "success");
+            }
+
+            // ⚡ INCIDENT UPDATE (REAL-TIME SYNC)
+            else if (msg?.type === "new_incident") {
+                setSosResponse((curr) => {
+                    if (!curr) return curr;
+
+                    // Match event safely
+                    if (curr.event_id === msg.data?.id || curr.id === msg.data?.id) {
+                        console.info("⚡ WebSocket SYNC: Updating incident data");
+
+                        return {
+                            ...curr,
+                            ...msg.data
+                        };
+                    }
+
+                    return curr;
+                });
+            }
+
+        } catch (err) {
+            console.error("❌ WebSocket Handler Error:", err);
         }
     }, [addToast]);
 
-    const { status: wsStatus } = useWebSocket(backendOnline ? (import.meta.env.VITE_WS_URL || config.WS_URL) : null, handleWSEvent);
+    // ✅ WebSocket Hook (ONLY SOURCE OF WS)
+    const { status: wsStatus } = useWebSocket(
+        backendOnline ? (import.meta.env.VITE_WS_URL || config.WS_URL) : null,
+        handleWSEvent
+    );
 
-    const processSOS = (payload, isSilent) => {
-        if (!isSilent) {
-            setEmergencyState(true);
-            playSOSBeep();
-        }
+    // ✅ Production-Level SOS Handler
+    const processSOS = useCallback(async (isSilent = false) => {
+        try {
+            setSending(true);
 
-        api.post('ingestion/sos', { ...payload, category: selectedCategory })
-        .then(res => {
-            const data = res.data;
-            setSending(false);
-            if (!isSilent) setSosResponse(data);
-        })
-        .catch(() => {
-            setSending(false);
-            if (!isSilent) addToast("Syncing with satellite relay...", "warning", 5000);
-        });
-    };
-    // Primary WebSocket Sync: Zero-Latency Updates
-    useEffect(() => {
-        if (lastMessage !== null) {
+            // Get Real Location
+            let location = { lat: 13.6012, lng: 79.3905 }; // Default fallback
             try {
-                const message = JSON.parse(lastMessage.data);
-                if (message.type === 'new_incident' && message.data.id === sosResponse?.event_id) {
-                    console.info("⚡ WebSocket SYNC: SOS Severity updated via real-time feed.");
-                    setSosResponse(curr => ({...curr, ...message.data}));
-                }
-            } catch (err) {
-                console.error("WebSocket parse fail:", err);
+                const pos = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+                });
+                location = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            } catch (e) {
+                console.warn("Geolocation failed, using fallback:", e);
             }
+
+            const payload = {
+                ...location,
+                device_id: deviceId,
+                description: `Emergency: ${selectedCategory} reported`
+            };
+
+            const res = await api.post('ingestion/sos', {
+                ...payload,
+                category: selectedCategory
+            });
+
+            const data = res.data;
+            console.info("📡 SOS Response:", data);
+
+            setSosResponse(data);
+            setSending(false);
+
+        } catch (err) {
+            console.error("❌ SOS Error:", err);
+            setSending(false);
+            // If it fails, give the user feedback and reset stage after a few seconds
+            addToast("Syncing with satellite relay...", "warning", 5000);
+            setTimeout(() => {
+                 if (!sosResponse) setStage("IDLE");
+            }, 6000);
         }
-    }, [lastMessage, sosResponse?.event_id]);
+    }, [deviceId, selectedCategory, addToast]);
+
+    // 🕵️ DEBUG LOG
+    useEffect(() => {
+        if (sosResponse) console.info("📦 UPDATED SOS STATE:", sosResponse);
+    }, [sosResponse]);
+
+    // ✅ High-Stability Polling Backup
+    useEffect(() => {
+        const eventId = sosResponse?.event_id || sosResponse?.id;
+        if (!eventId) return;
+
+        let retry = 0;
+        const interval = setInterval(async () => {
+            retry++;
+
+            if (retry > 10) {
+                clearInterval(interval);
+                console.warn("⛔ Polling timeout: Stopping fallback sync");
+                return;
+            }
+
+            try {
+                // If we already have the data, stop polling
+                if (sosResponse?.severity || sosResponse?.severity_level) {
+                    clearInterval(interval);
+                    return;
+                }
+
+                console.info(`⏳ Polling Fallback (Attempt ${retry})...`);
+                const res = await api.get(`events/${eventId}`);
+
+                if (res.data) {
+                    console.info("⚡ Polling Sync: Partial/Full Data Captured");
+                    setSosResponse(prev => ({
+                        ...prev,
+                        ...res.data
+                    }));
+
+                    if (res.data?.severity_level || res.data?.severity) {
+                        console.info("✅ Polling Sync Success: FULL TELEMETRY LOCKED");
+                        clearInterval(interval);
+                    }
+                }
+
+            } catch (err) {
+                console.error("Polling failed", err);
+            }
+
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [sosResponse?.event_id, sosResponse?.id, sosResponse?.severity, sosResponse?.severity_level]);
 
     const handleSOS = () => {
+        // Immediate visual feedback
         setSending(true);
+        setStage("EXECUTION");
         playSOSBeep();
-        setTimeout(async () => {
-            setEmergencyState(true);
-            // PHASE 1: Immediate Handshake
-            const response = await api.post('/ingestion/sos', {
-                lat: 13.6012,
-                lng: 79.3905,
-                description: `Emergency: ${selectedCategory} reported`,
-                device_id: deviceId
-            });
-            
-            console.info("🛰️ SOS Handshake Success:", response.data);
-            setSosResponse(response.data);
-            setSending(false);
-            
-            // PHASE 2: Start Smart-Polling Fallback
-            if (response.data.event_id) {
-                let attempts = 0;
-                let pollInterval = setInterval(async () => {
-                    attempts++;
-                    
-                    // Success-Stop Logic
-                    if (sosResponse?.severity) {
-                        console.info("✅ Severity synced. Stopping poll.");
-                        clearInterval(pollInterval);
-                        return;
-                    }
-
-                    // Retry-Limit (10 attempts / 30s)
-                    if (attempts > 10) {
-                        console.error("🛑 SAT-SYNC Timeout: No response after 30s.");
-                        clearInterval(pollInterval);
-                        return;
-                    }
-
-                    try {
-                        console.info(`⏳ SAT-SYNC Polling (Attempt ${attempts})...`);
-                        const update = await api.get(`/events/${response.data.event_id}`);
-                        
-                        if (update.data.severity_level) {
-                            console.info("✅ Polling update successful!");
-                            setSosResponse(update.data);
-                            clearInterval(pollInterval);
-                        } else {
-                            console.info("⏳ Still processing backend AI...");
-                        }
-                    } catch (err) {
-                        console.warn("⚠️ Polling attempt failed. Retrying...");
-                    }
-                }, 3000);
-            }
-        }, 1500);
+        
+        processSOS(silentMode);
     };
+
+    // --- HELPER: SAFE DATA EXTRACTION ---
+    const getSosValue = useCallback((key) => {
+        if (!sosResponse) return null;
+
+        if (key === 'location') {
+            // Handle Nested: { location: { lat, lng } }
+            if (sosResponse.location?.lat !== undefined) {
+                return `${sosResponse.location.lat.toFixed(4)}, ${sosResponse.location.lng.toFixed(4)}`;
+            }
+            // Handle Flat: { lat, lng }
+            if (sosResponse.lat !== undefined) {
+                return `${sosResponse.lat.toFixed(4)}, ${sosResponse.lng.toFixed(4)}`;
+            }
+            return null;
+        }
+
+        if (key === 'severity') {
+            return sosResponse.severity_level || sosResponse.severity || null;
+        }
+
+        if (key === 'confidence') {
+            const score = sosResponse.confidence_score !== undefined ? sosResponse.confidence_score : sosResponse.confidence;
+            return score !== undefined ? `${Math.round(score * 100)}%` : null;
+        }
+
+        return sosResponse[key] || null;
+    }, [sosResponse]);
+
 
     const disasterTypes = [
         { id: 'Medical', icon: Heart, color: 'text-red-500' },
@@ -178,162 +254,191 @@ const CitizenApp = () => {
     ];
 
     return (
-        <div className="min-h-screen w-full bg-[#0B0F19] flex flex-col font-inter relative text-slate-200 overflow-y-auto px-4 pt-6 pb-24">
-            <nav className="flex items-center justify-between mb-8 px-2">
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shadow-lg bg-red-600/20 border border-red-500/40">
-                        <Shield className="text-red-500 fill-red-500/10" size={18} />
+        <div className="min-h-screen bg-[#0B0F19] flex flex-col items-center font-inter relative text-slate-200 overflow-x-hidden overflow-y-auto scanline">
+            <div className="vignette" />
+            <div className="w-full max-w-5xl mx-auto flex flex-col flex-1 relative z-10 px-6 space-y-8">
+            {/* TACTICAL NAVIGATION */}
+            <nav className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg bg-nexus-blue/10 border border-nexus-blue/30 group">
+                        <Shield className="text-nexus-blue fill-nexus-blue/5 transition-transform group-hover:scale-110" size={20} />
                     </div>
-                    <h1 className="text-xl font-orbitron font-black tracking-tighter text-white uppercase italic">NEXUS Citizen</h1>
+                    <div>
+                        <h1 className="text-xl font-orbitron font-black tracking-tight text-white uppercase italic leading-none">NEXUS <span className="text-nexus-blue">CITIZEN</span></h1>
+                        <p className="text-[8px] font-orbitron font-bold text-slate-500 uppercase tracking-widest mt-1">SATELLITE LINK // ACTIVE</p>
+                    </div>
                 </div>
                 
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10B981]" />
-                        <span className="text-[10px] font-orbitron font-bold tracking-widest leading-none">ONLINE</span>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 text-emerald-400">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.6)] animate-pulse" />
+                        <span className="text-[9px] font-orbitron font-black tracking-widest leading-none">ENCRYPTED</span>
                     </div>
                 </div>
             </nav>
 
-            {!emergencyState && (
-                <div className="bg-red-950/20 border-y border-red-900/50 p-3 text-center mb-8">
-                    <p className="text-red-500 font-orbitron font-bold flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.25em]">
-                        <Activity size={14} className="animate-pulse" /> SYSTEM READY
-                    </p>
-                </div>
-            )}
+            <div className={`border-y border-white/5 py-3 text-center overflow-hidden relative w-full rounded-2xl ${stage !== 'IDLE' ? 'bg-red-500/10' : 'bg-nexus-blue/5'}`}>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />
+                <p className={`font-orbitron font-black flex items-center justify-center gap-3 text-[10px] uppercase tracking-[0.3em] relative z-10 ${stage !== 'IDLE' ? 'text-red-500' : 'text-nexus-blue'}`}>
+                    <Activity size={14} className="animate-pulse" /> {stage !== 'IDLE' ? 'EMERGENCY STATE ACTIVE' : 'COMMAND FREQUENCY CLEAR'}
+                </p>
+            </div>
 
-            <main className="flex-1 flex flex-col items-center">
+            <main className="flex-1 flex flex-col items-center justify-center w-full">
                 <AnimatePresence mode="wait">
-                    {!emergencyState ? (
+                    {stage === "IDLE" && (
                         <motion.div key="sos-idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center w-full">
-                            {/* 🌊 Disaster Category Selector */}
-                            <p className="text-[10px] font-orbitron font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">Select Category</p>
-                            <div className="flex items-center gap-3 mb-10 overflow-x-auto w-full justify-center pb-2 no-scrollbar">
-                                {disasterTypes.map((type) => (
-                                    <button key={type.id} onClick={() => setSelectedCategory(type.id)} className={`flex flex-col items-center shrink-0 w-16 transition-all ${selectedCategory === type.id ? 'scale-110 opacity-100' : 'opacity-40 hover:opacity-70'}`}>
-                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-2 border-2 ${selectedCategory === type.id ? 'bg-white/10 border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.2)]' : 'bg-white/5 border-transparent'}`}>
-                                            <type.icon size={20} className={type.color} />
-                                        </div>
-                                        <span className="text-[9px] font-bold text-slate-300">{type.id}</span>
-                                    </button>
+                            {/* 🔥 SOS PULSAR 2.0 */}
+                            <div className="sos-container relative">
+                                {[1, 2, 3].map((i) => (
+                                    <motion.div
+                                        key={i}
+                                        className="absolute rounded-full border border-red-500/30"
+                                        initial={{ width: 240, height: 240, opacity: 0.5 }}
+                                        animate={{ width: 240 + i * 80, height: 240 + i * 80, opacity: 0 }}
+                                        transition={{ duration: 2, repeat: Infinity, delay: i * 0.6, ease: "easeOut" }}
+                                    />
                                 ))}
-                            </div>
-
-                            <p className="text-slate-400 text-center mb-10 max-w-xs text-xs font-medium tracking-tight leading-relaxed opacity-70">
-                                Press and hold the SOS button for 2 seconds. Global satellite relay will auto-detect your precision location.
-                            </p>
-
-                            <div className="relative group cursor-pointer" onClick={handleSOS}>
-                                <div className="absolute inset-0 bg-red-600/30 rounded-full glow-critical blur-2xl"></div>
-                                <div className="relative w-64 h-64 rounded-full bg-red-600 flex flex-col items-center justify-center shadow-[0_15px_60px_rgba(239,68,68,0.5)] border-8 border-red-500/50 transition-transform active:scale-95">
-                                    {sending ? <Activity className="animate-spin text-white" size={48} /> : (
-                                        <>
-                                            <span className="text-7xl font-orbitron font-black text-white tracking-widest drop-shadow-lg">SOS</span>
-                                            <span className="mt-4 px-4 py-1.5 bg-black/20 rounded-full text-[10px] font-orbitron font-black uppercase tracking-widest text-white/90">TRANSMIT</span>
-                                        </>
-                                    )}
+                                <div className={`sos-button animate-pulse-sos gpu transition shadow-[0_0_60px_rgba(239,68,68,0.8)] ${sending ? 'opacity-80' : ''}`} onClick={handleSOS}>
+                                    {sending ? <Activity className="animate-spin text-white opacity-50" size={64} /> : "SOS"}
                                 </div>
-                            </div>
-
-                            <div className="mt-16 w-full max-w-sm space-y-4">
-                                <div className="glass-panel p-5 rounded-2xl shadow-2xl">
-                                    <h3 className="text-[10px] font-orbitron font-black text-amber-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                        <ShieldAlert size={14} /> ACTIVE PROTOCOL: {selectedCategory.toUpperCase()}
-                                    </h3>
-                                    <ul className="space-y-3 text-[11px] font-medium text-slate-400">
-                                        <li className="flex gap-2"> <span className="text-amber-500">01</span> Standard emergency relay active.</li>
-                                        <li className="flex gap-2"> <span className="text-amber-500">02</span> Maintain visual contact with hazards.</li>
-                                        <li className="flex gap-2"> <span className="text-amber-500">03</span> Real-time telemetry monitoring.</li>
-                                    </ul>
+                                <div className="sos-subtext glow-text mt-8">{sending ? "TRANSMITTING SIGNAL..." : "TAP FOR RESCUE"}</div>
+                                <div className="info-card mt-12 w-full max-w-[340px] gpu transition">
+                                    <h4 className="font-orbitron font-black text-red-500 text-[11px] uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                        <ShieldAlert size={14} /> Auto-Detected Protocol
+                                    </h4>
+                                    <ol className="space-y-3 text-[12px] font-medium text-slate-300 list-decimal list-inside marker:text-red-500/50 marker:font-orbitron">
+                                        <li className="pl-1">Move to high ground immediately.</li>
+                                        <li className="pl-1">Use emergency stairwells.</li>
+                                        <li className="pl-1">Conserve battery & maintain link.</li>
+                                    </ol>
                                 </div>
-                                <div className="glass-panel p-5 rounded-2xl flex items-center justify-between shadow-2xl">
-                                    <div className="flex items-center gap-3">
-                                        <VolumeX className="text-slate-500" size={20} />
-                                        <div className="text-left flex flex-col">
-                                            <span className="text-[11px] font-orbitron font-black text-white uppercase">Silent Distress Mode</span>
-                                            <span className="text-[9px] text-slate-500 font-bold leading-tight">Stealth activation active.</span>
+                                <div className="glass-card p-6 rounded-3xl mt-8 flex items-center justify-between hover:bg-white/5 transition-smooth cursor-pointer w-full max-w-[340px]" onClick={() => setSilentMode(!silentMode)}>
+                                    <div className="flex items-center gap-4">
+                                        <div className={`p-3 rounded-xl border ${silentMode ? 'bg-red-500/10 border-red-500/30 text-red-500' : 'bg-slate-800 border-white/5 text-slate-500'}`}>
+                                            <VolumeX size={20} />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[11px] font-orbitron font-black text-white uppercase tracking-widest italic leading-none">Silent Mode</span>
+                                            <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">Stealth Activation</span>
                                         </div>
                                     </div>
-                                    <div className={`w-12 h-6 rounded-full p-1 transition-colors ${silentMode ? 'bg-red-600' : 'bg-slate-700'}`} onClick={() => setSilentMode(!silentMode)}>
-                                        <div className={`w-4 h-4 bg-white rounded-full transition-transform ${silentMode ? 'translate-x-6' : 'translate-x-0'}`} />
+                                    <div className={`w-14 h-7 rounded-full p-1 transition-smooth relative ${silentMode ? 'bg-red-600' : 'bg-slate-700'}`}>
+                                        <div className={`w-5 h-5 bg-white rounded-full shadow-lg transition-transform ${silentMode ? 'translate-x-7' : 'translate-x-0'}`} />
                                     </div>
                                 </div>
                             </div>
                         </motion.div>
-                    ) : (
-                        <motion.div key="sos-active" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md space-y-4 pb-20">
-                            <div className="glass-panel rounded-3xl p-6 shadow-2xl glow-critical">
-                                <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/5">
-                                    <div>
-                                        <h3 className="text-xl font-orbitron font-black tracking-tight text-white uppercase italic">Execution Status</h3>
-                                        <p className="text-[9px] font-orbitron font-bold text-red-500 tracking-widest mt-1">PRIORITY 1 EMERGENCY</p>
+                    )}
+
+                    {stage === "EXECUTION" && (
+                        <motion.div key="sos-execution" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md space-y-6 pb-24">
+                            <div className="glass-card rounded-[32px] p-8 border-t-2 border-red-500/20 shadow-[0_40px_100px_rgba(0,0,0,0.6)] relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/5 blur-[60px]" />
+                                <div className="mb-10 pb-6 border-b border-white/5">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
+                                        <p className="text-[10px] font-orbitron font-black text-red-500 tracking-[0.3em] uppercase">EXECUTION STATUS</p>
                                     </div>
-                                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border transition-colors ${sosResponse?.severity ? 'bg-red-500/10 border-red-500/30 text-nexus-red' : 'bg-slate-500/10 border-slate-500/30 text-slate-400'}`}>
-                                        <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${sosResponse?.severity ? 'bg-nexus-red' : 'bg-slate-500'}`} />
-                                        <span className="text-[10px] font-orbitron font-bold uppercase tracking-widest">{sosResponse?.severity || 'ANALYZING...'}</span>
+                                    <h3 className="text-2xl font-orbitron font-black tracking-tight text-white uppercase italic italic">ASSESSMENT <span className="text-slate-500">ACTIVE</span></h3>
+                                </div>
+
+                                <div className="space-y-4">
+                                {[
+                                    { label: 'Spatial Coordinates', val: getSosValue('location') || (sosResponse ? 'UPDATING...' : 'SCANNING LOCATIONS...'), icon: MapPin, color: 'text-red-500' },
+                                    { label: 'Severity Level', val: getSosValue('severity') || (sosResponse ? 'UPDATING...' : 'CALCULATING...'), icon: Zap, color: 'text-amber-500' },
+                                    { label: 'Confidence Score', val: getSosValue('confidence') || (sosResponse ? 'UPDATING...' : 'ANALYZING...'), icon: Activity, color: 'text-nexus-blue' },
+                                ].map((field, idx) => (
+                                    <div key={idx} className="bg-black/40 p-5 rounded-2xl border border-white/5 flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`p-2 bg-black/40 rounded-xl border border-white/5 ${field.color}`}>
+                                                <field.icon size={16} />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[9px] font-orbitron font-bold text-slate-500 uppercase tracking-widest">{field.label}</span>
+                                                <motion.span 
+                                                    initial={{ opacity: 0 }} 
+                                                    animate={{ opacity: 1 }} 
+                                                    key={field.val}
+                                                    className="text-[12px] font-orbitron font-black text-white uppercase tracking-tight mt-0.5 shadow-nexus"
+                                                >
+                                                    {field.val || '---'}
+                                                </motion.span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                </div>
+
+                                <div className="bg-red-500/5 p-6 rounded-3xl border border-red-500/20 mt-8">
+                                    <div className="flex items-center gap-3 mb-2 text-red-500">
+                                        <Activity size={18} className="animate-pulse" />
+                                        <span className="text-[10px] font-orbitron font-black uppercase tracking-[0.2em]">Status: {sending ? 'Transmitting' : 'Waiting for dispatch'}</span>
+                                    </div>
+                                    <p className="text-[12px] text-slate-400 italic">Satellite link established. Tactical relays are identifying the nearest intercept unit.</p>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {stage === "RESCUE_ACTIVE" && (
+                        <motion.div key="sos-rescue" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md space-y-6 pb-24">
+                            <div className="glass-card rounded-[32px] p-8 border-t-2 border-emerald-500/20 shadow-[0_40px_100px_rgba(0,0,0,0.6)] relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-600/5 blur-[60px]" />
+                                <div className="mb-10 pb-6 border-b border-white/5">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        <p className="text-[10px] font-orbitron font-black text-emerald-500 tracking-[0.3em] uppercase">INTERCEPT ACTIVE</p>
+                                    </div>
+                                    <h3 className="text-2xl font-orbitron font-black tracking-tight text-white uppercase italic italic">RESCUE <span className="text-slate-500">PROGRESS</span></h3>
+                                </div>
+
+                                <div className="bg-nexus-blue/5 border border-nexus-blue/30 rounded-3xl p-8 mb-8 relative overflow-hidden">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="flex items-center gap-4">
+                                            <span className="text-4xl">{dispatchData?.unit_icon || '🚑'}</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-orbitron font-bold text-nexus-blue/60 uppercase tracking-widest">Intercept Unit</span>
+                                                <span className="text-xl font-orbitron font-black text-white">{dispatchData?.unit_callsign || 'ALPHA-1'}</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="text-[10px] font-orbitron font-bold text-slate-500 uppercase tracking-widest block mb-1">Estimated ETA</span>
+                                            <span className="text-3xl font-orbitron font-black text-nexus-blue leading-none">{countdownEta || '--'} MIN</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-end">
+                                            <span className="text-[10px] font-orbitron font-black text-emerald-400 uppercase tracking-widest">En Route</span>
+                                            <span className="text-[10px] font-orbitron font-bold text-white/40 uppercase">Satellite Locked</span>
+                                        </div>
+                                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                                            <motion.div initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ duration: (countdownEta || 10) * 60, ease: "linear" }} className="h-full bg-gradient-to-r from-nexus-blue to-emerald-500 shadow-[0_0_15px_rgba(34,211,238,0.5)]" />
+                                        </div>
                                     </div>
                                 </div>
 
-                                {dispatchInfo && (
-                                    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-blue-600/10 border border-blue-500/30 rounded-2xl p-5 mb-6">
-                                        <div className="flex items-center gap-2 mb-3 text-blue-400">
-                                            <Radio size={16} className="animate-pulse" />
-                                            <span className="text-[10px] font-orbitron font-black uppercase tracking-widest">Rescue Live Feed</span>
-                                        </div>
-                                        <h4 className="text-sm font-bold text-white mb-2 tracking-tight">Rescue unit dispatched — ETA {countdownEta || 9.5} min</h4>
-                                        <div className="h-2 w-full bg-blue-500/20 rounded-full overflow-hidden mb-4 border border-blue-500/10">
-                                            <motion.div initial={{ width: "20%" }} animate={{ width: "80%" }} transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }} className="h-full bg-gradient-to-r from-blue-500 to-cyan-400" />
-                                        </div>
-                                        <div className="flex items-center justify-between bg-black/40 p-3 rounded-xl border border-white/5">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Unit:</span>
-                                                <span className="text-[10px] text-white font-orbitron font-black uppercase tracking-widest italic">{dispatchInfo.unit_icon || '🚑'} {dispatchInfo.unit_type || 'AMBULANCE'}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">ETA:</span>
-                                                <span className="text-xl text-cyan-400 font-orbitron font-black tracking-[0.1em]">{countdownEta || 9.5} MIN</span>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                )}
-
-                                <div className="grid grid-cols-1 gap-3">
-                                    {[
-                                        { label: 'Precision Location', val: `${sosResponse?.location?.lat?.toFixed(4) || '13.6012'}, ${sosResponse?.location?.lng?.toFixed(4) || '79.3905'}`, icon: MapPin, color: 'text-red-500' },
-                                        { label: 'Severity Index', val: sosResponse?.severity || 'CRITICAL', icon: Shield, color: 'text-amber-500' },
-                                        { label: 'NEXUS Intelligence', val: sosResponse?.confidence ? `${Math.round(sosResponse.confidence * 100)}%` : '75%', icon: Activity, color: 'text-cyan-500' },
-                                    ].map((field, idx) => (
-                                        <div key={idx} className="bg-black/30 p-4 rounded-2xl border border-white/5 flex flex-col items-start">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <field.icon size={12} className={field.color} />
-                                                <span className="text-[10px] font-orbitron font-bold text-slate-500 uppercase tracking-widest">{field.label}</span>
-                                            </div>
-                                    <div className={`px-2 py-0.5 rounded text-[8px] font-orbitron font-black tracking-widest uppercase italic border border-white/5 ${sosResponse?.severity || sosResponse?.severity_level ? 'bg-black/40' : 'bg-slate-500/20 text-slate-500'}`}>
-                                        {sosResponse?.severity || sosResponse?.severity_level || 'ANALYZING...'}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-black/40 p-5 rounded-2xl border border-white/5 flex flex-col items-center">
+                                        <Navigation size={20} className="text-nexus-blue mb-2 animate-pulse" />
+                                        <span className="text-[11px] font-orbitron font-black text-white uppercase">Live Sync</span>
                                     </div>
-                                        </div>
-                                    ))}
-                                    
-                                    <div className="bg-emerald-500/5 p-4 rounded-2xl border border-emerald-500/20 flex flex-col items-start">
-                                        <div className="flex items-center gap-2 mb-1 text-emerald-500">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-                                            <span className="text-[10px] font-orbitron font-bold uppercase tracking-widest font-bold">Protocol Active:</span>
-                                        </div>
-                                        <div className="text-[11px] font-medium text-emerald-400 italic">
-                                            {sosResponse?.status_message || (sosResponse?.severity === 'CRITICAL' ? "🚨 Emergency detected. Rescue units have been dispatched." : "🟠 Situation under monitoring. Stay alert.")}
-                                        </div>
+                                    <div className="bg-black/40 p-5 rounded-2xl border border-white/5 flex flex-col items-center">
+                                        <Radio size={20} className="text-emerald-500 mb-2 animate-pulse" />
+                                        <span className="text-[11px] font-orbitron font-black text-white uppercase">Link Active</span>
                                     </div>
                                 </div>
 
-                                <button onClick={() => { setEmergencyState(false); setSosResponse(null); setDispatchInfo(null); }} className="w-full mt-6 py-4 bg-slate-900/50 hover:bg-slate-800 text-slate-500 rounded-2xl font-orbitron font-bold text-[10px] uppercase tracking-[0.3em] transition-all border border-white/5 active:scale-[0.98]">
-                                    BACK TO CONTROL SYSTEM
+                                <button onClick={() => { setStage("IDLE"); setSosResponse(null); setDispatchData(null); }} className="w-full mt-10 py-5 bg-black/60 hover:bg-white/5 text-slate-500 rounded-[24px] font-orbitron font-black text-[10px] uppercase tracking-[0.4em] transition-smooth border border-white/5 active:scale-95">
+                                    DISCONNECT RELAY
                                 </button>
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
             </main>
+            </div>
         </div>
     );
 };

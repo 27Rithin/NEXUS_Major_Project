@@ -955,3 +955,736 @@ default_lng
 [15:58:56.34] Backend service launched. 
 [16:01:02.25] Backend service launched. 
 [16:03:08.48] FATAL: Retry limit exceeded. 
+[29-03-2026 21:40:21.00] NEXUS Launcher started. 
+[21:40:21.37] Running DB Init... 
+Traceback (most recent call last):
+  File "E:\Major_Project\NEXUS_Major_Project\backend\init_db.py", line 10, in <module>
+    from config import settings
+  File "E:\Major_Project\NEXUS_Major_Project\backend\config.py", line 28, in <module>
+    settings = Settings()
+               ^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\config.py", line 23, in __init__
+    super().__init__(**kwargs)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic_settings\main.py", line 242, in __init__
+    super().__init__(**__pydantic_self__.__class__._settings_build_values(sources, init_kwargs))
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 4 validation errors for Settings
+vite_api_url
+  Extra inputs are not permitted [type=extra_forbidden, input_value='http://localhost:8000/api', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+vite_ws_url
+  Extra inputs are not permitted [type=extra_forbidden, input_value='ws://localhost:8000/ws', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+default_lat
+  Extra inputs are not permitted [type=extra_forbidden, input_value='13.6288', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+default_lng
+  Extra inputs are not permitted [type=extra_forbidden, input_value='79.4192', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+[21:40:25.87] Running Alembic Migrations... 
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Scripts\alembic.exe\__main__.py", line 7, in <module>
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 1047, in main
+    CommandLine(prog=prog).main(argv=argv)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 1037, in main
+    self.run_cmd(cfg, options)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 971, in run_cmd
+    fn(
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\command.py", line 483, in upgrade
+    script.run_env()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\script\base.py", line 545, in run_env
+    util.load_python_file(self.dir, "env.py")
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\util\pyfiles.py", line 116, in load_python_file
+    module = load_module_py(module_id, path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\util\pyfiles.py", line 136, in load_module_py
+    spec.loader.exec_module(module)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 994, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "E:\Major_Project\NEXUS_Major_Project\backend\alembic\env.py", line 21, in <module>
+    from database import Base
+  File "E:\Major_Project\NEXUS_Major_Project\backend\database.py", line 3, in <module>
+    from config import settings
+  File "E:\Major_Project\NEXUS_Major_Project\backend\config.py", line 28, in <module>
+    settings = Settings()
+               ^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\config.py", line 23, in __init__
+    super().__init__(**kwargs)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic_settings\main.py", line 242, in __init__
+    super().__init__(**__pydantic_self__.__class__._settings_build_values(sources, init_kwargs))
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 4 validation errors for Settings
+vite_api_url
+  Extra inputs are not permitted [type=extra_forbidden, input_value='http://localhost:8000/api', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+vite_ws_url
+  Extra inputs are not permitted [type=extra_forbidden, input_value='ws://localhost:8000/ws', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+default_lat
+  Extra inputs are not permitted [type=extra_forbidden, input_value='13.6288', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+default_lng
+  Extra inputs are not permitted [type=extra_forbidden, input_value='79.4192', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+[21:40:29.64] Starting Frontend... 
+[21:40:29.67] Backend service launched. 
+[21:42:35.84] Backend service launched. 
+[21:44:42.03] Backend service launched. 
+[21:46:48.18] Backend service launched. 
+[21:48:54.13] Backend service launched. 
+[21:51:00.58] FATAL: Retry limit exceeded. 
+[29-03-2026 23:21:02.32] NEXUS Launcher started. 
+[23:21:03.08] Running DB Init... 
+Traceback (most recent call last):
+  File "E:\Major_Project\NEXUS_Major_Project\backend\init_db.py", line 10, in <module>
+    from config import settings
+  File "E:\Major_Project\NEXUS_Major_Project\backend\config.py", line 28, in <module>
+    settings = Settings()
+               ^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\config.py", line 23, in __init__
+    super().__init__(**kwargs)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic_settings\main.py", line 242, in __init__
+    super().__init__(**__pydantic_self__.__class__._settings_build_values(sources, init_kwargs))
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 4 validation errors for Settings
+vite_api_url
+  Extra inputs are not permitted [type=extra_forbidden, input_value='http://localhost:8000/api', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+vite_ws_url
+  Extra inputs are not permitted [type=extra_forbidden, input_value='ws://localhost:8000/ws', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+default_lat
+  Extra inputs are not permitted [type=extra_forbidden, input_value='13.6288', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+default_lng
+  Extra inputs are not permitted [type=extra_forbidden, input_value='79.4192', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+[23:21:09.65] Running Alembic Migrations... 
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Scripts\alembic.exe\__main__.py", line 7, in <module>
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 1047, in main
+    CommandLine(prog=prog).main(argv=argv)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 1037, in main
+    self.run_cmd(cfg, options)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 971, in run_cmd
+    fn(
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\command.py", line 483, in upgrade
+    script.run_env()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\script\base.py", line 545, in run_env
+    util.load_python_file(self.dir, "env.py")
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\util\pyfiles.py", line 116, in load_python_file
+    module = load_module_py(module_id, path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\util\pyfiles.py", line 136, in load_module_py
+    spec.loader.exec_module(module)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 994, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "E:\Major_Project\NEXUS_Major_Project\backend\alembic\env.py", line 21, in <module>
+    from database import Base
+  File "E:\Major_Project\NEXUS_Major_Project\backend\database.py", line 3, in <module>
+    from config import settings
+  File "E:\Major_Project\NEXUS_Major_Project\backend\config.py", line 28, in <module>
+    settings = Settings()
+               ^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\config.py", line 23, in __init__
+    super().__init__(**kwargs)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic_settings\main.py", line 242, in __init__
+    super().__init__(**__pydantic_self__.__class__._settings_build_values(sources, init_kwargs))
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 4 validation errors for Settings
+vite_api_url
+  Extra inputs are not permitted [type=extra_forbidden, input_value='http://localhost:8000/api', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+vite_ws_url
+  Extra inputs are not permitted [type=extra_forbidden, input_value='ws://localhost:8000/ws', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+default_lat
+  Extra inputs are not permitted [type=extra_forbidden, input_value='13.6288', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+default_lng
+  Extra inputs are not permitted [type=extra_forbidden, input_value='79.4192', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+[23:21:17.87] Backend service launched. 
+[23:23:25.45] Backend service launched. 
+[23:25:33.28] Backend service launched. 
+[23:27:40.67] Backend service launched. 
+[23:29:48.53] Backend service launched. 
+[23:31:55.78] FATAL: Retry limit exceeded. 
+[29-03-2026 23:50:20.33] NEXUS Launcher started. 
+[23:50:20.74] Running DB Init... 
+Traceback (most recent call last):
+  File "E:\Major_Project\NEXUS_Major_Project\backend\init_db.py", line 10, in <module>
+    from config import settings
+  File "E:\Major_Project\NEXUS_Major_Project\backend\config.py", line 28, in <module>
+    settings = Settings()
+               ^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\config.py", line 23, in __init__
+    super().__init__(**kwargs)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic_settings\main.py", line 242, in __init__
+    super().__init__(**__pydantic_self__.__class__._settings_build_values(sources, init_kwargs))
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 4 validation errors for Settings
+vite_api_url
+  Extra inputs are not permitted [type=extra_forbidden, input_value='http://localhost:8000/api', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+vite_ws_url
+  Extra inputs are not permitted [type=extra_forbidden, input_value='ws://localhost:8000/ws', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+default_lat
+  Extra inputs are not permitted [type=extra_forbidden, input_value='13.6288', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+default_lng
+  Extra inputs are not permitted [type=extra_forbidden, input_value='79.4192', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+[23:50:25.73] Running Alembic Migrations... 
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Scripts\alembic.exe\__main__.py", line 7, in <module>
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 1047, in main
+    CommandLine(prog=prog).main(argv=argv)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 1037, in main
+    self.run_cmd(cfg, options)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\config.py", line 971, in run_cmd
+    fn(
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\command.py", line 483, in upgrade
+    script.run_env()
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\script\base.py", line 545, in run_env
+    util.load_python_file(self.dir, "env.py")
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\util\pyfiles.py", line 116, in load_python_file
+    module = load_module_py(module_id, path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\alembic\util\pyfiles.py", line 136, in load_module_py
+    spec.loader.exec_module(module)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 994, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "E:\Major_Project\NEXUS_Major_Project\backend\alembic\env.py", line 21, in <module>
+    from database import Base
+  File "E:\Major_Project\NEXUS_Major_Project\backend\database.py", line 3, in <module>
+    from config import settings
+  File "E:\Major_Project\NEXUS_Major_Project\backend\config.py", line 28, in <module>
+    settings = Settings()
+               ^^^^^^^^^^
+  File "E:\Major_Project\NEXUS_Major_Project\backend\config.py", line 23, in __init__
+    super().__init__(**kwargs)
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic_settings\main.py", line 242, in __init__
+    super().__init__(**__pydantic_self__.__class__._settings_build_values(sources, init_kwargs))
+  File "E:\Major_Project\NEXUS_Major_Project\backend\venv\Lib\site-packages\pydantic\main.py", line 250, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 4 validation errors for Settings
+vite_api_url
+  Extra inputs are not permitted [type=extra_forbidden, input_value='http://localhost:8000/api', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+vite_ws_url
+  Extra inputs are not permitted [type=extra_forbidden, input_value='ws://localhost:8000/ws', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+default_lat
+  Extra inputs are not permitted [type=extra_forbidden, input_value='13.6288', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+default_lng
+  Extra inputs are not permitted [type=extra_forbidden, input_value='79.4192', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden
+[23:50:29.70] Starting Frontend... 
+[23:50:29.72] Backend service launched. 
+[23:52:35.65] Backend service launched. 
+[23:54:41.70] Backend service launched. 
+[23:56:47.77] Backend service launched. 
+[23:58:53.69] Backend service launched. 
+[ 0:01:00.47] FATAL: Retry limit exceeded. 
+[30-03-2026  8:26:27.23] NEXUS Launcher started. 
+[ 8:26:29.96] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[ 8:26:39.59] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[ 8:26:51.86] Starting Frontend... 
+[ 8:26:52.11] Backend service launched. 
+[ 8:39:41.87] UNHEALTHY STATUS DETECTED. 
+[ 8:39:58.18] Backend service launched. 
+[12:20:36.05] UNHEALTHY STATUS DETECTED. 
+[12:20:43.41] Backend service launched. 
+[12:29:36.18] UNHEALTHY STATUS DETECTED. 
+[12:29:36.43] Backend service launched. 
+[12:30:34.86] UNHEALTHY STATUS DETECTED. 
+[12:30:35.12] Backend service launched. 
+[12:40:56.99] UNHEALTHY STATUS DETECTED. 
+[12:40:58.73] Backend service launched. 
+[12:42:38.06] Backend service launched. 
+[12:44:30.48] Backend service launched. 
+[12:47:42.02] Backend service launched. 
+[12:49:31.14] Backend service launched. 
+[12:51:43.77] FATAL: Retry limit exceeded. 
+[30-03-2026 14:25:14.10] NEXUS Launcher started. 
+[14:25:14.64] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[14:25:22.79] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[14:25:31.13] Starting Frontend... 
+[14:25:31.17] Backend service launched. 
+[14:49:07.65] UNHEALTHY STATUS DETECTED. 
+[14:49:08.60] Backend service launched. 
+[15:03:51.30] UNHEALTHY STATUS DETECTED. 
+[15:03:51.82] Backend service launched. 
+[15:04:18.00] Frontend restart triggered. 
+[15:04:28.49] Frontend restart triggered. 
+[15:06:45.48] UNHEALTHY STATUS DETECTED. 
+[15:06:45.65] Backend service launched. 
+[15:07:12.44] Frontend restart triggered. 
+[30-03-2026 16:42:36.44] NEXUS Launcher started. 
+[16:42:36.85] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[16:42:43.37] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[16:42:51.35] Starting Frontend... 
+[16:42:51.39] Backend service launched. 
+[16:43:58.21] UNHEALTHY STATUS DETECTED. 
+[16:43:59.19] Backend service launched. 
+[16:52:29.60] UNHEALTHY STATUS DETECTED. 
+[16:52:29.77] Backend service launched. 
+[16:52:55.55] Frontend restart triggered. 
+[16:54:39.95] UNHEALTHY STATUS DETECTED. 
+[16:54:40.09] Backend service launched. 
+[16:55:50.46] Backend service launched. 
+[16:56:58.09] Backend service launched. 
+[16:58:05.62] Backend service launched. 
+[16:59:13.16] Backend service launched. 
+[17:00:20.75] FATAL: Retry limit exceeded. 
+[30-03-2026 17:55:56.22] NEXUS Launcher started. 
+[17:55:56.66] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[17:56:02.80] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[17:56:08.23] Starting Frontend... 
+[17:56:08.25] Backend service launched. 
+[31-03-2026  8:34:43.62] NEXUS Launcher started. 
+[ 8:34:44.06] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[ 8:34:51.88] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[ 8:35:00.57] Starting Frontend... 
+[ 8:35:00.60] Backend service launched. 
+[ 8:44:52.60] UNHEALTHY STATUS DETECTED. 
+[ 8:44:52.85] Backend service launched. 
+[ 8:45:31.80] Frontend restart triggered. 
+[ 8:45:42.52] Frontend restart triggered. 
+[ 8:46:46.65] UNHEALTHY STATUS DETECTED. 
+[ 8:46:46.86] Backend service launched. 
+[ 8:47:17.21] Frontend restart triggered. 
+[ 8:50:25.29] UNHEALTHY STATUS DETECTED. 
+[ 8:50:29.09] Backend service launched. 
+[ 8:52:15.97] UNHEALTHY STATUS DETECTED. 
+[ 8:52:16.86] Backend service launched. 
+[ 8:53:25.94] Backend service launched. 
+[ 8:54:37.03] Backend service launched. 
+[ 8:55:47.44] Backend service launched. 
+[ 8:56:57.22] Backend service launched. 
+[ 8:58:05.54] FATAL: Retry limit exceeded. 
+[31-03-2026 19:50:42.93] NEXUS Launcher started. 
+[19:50:43.46] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[19:50:51.19] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[19:50:58.77] Starting Frontend... 
+[19:50:58.80] Backend service launched. 
+[19:57:12.44] UNHEALTHY STATUS DETECTED. 
+[19:57:12.81] Backend service launched. 
+[20:02:43.60] UNHEALTHY STATUS DETECTED. 
+[20:02:44.33] Backend service launched. 
+[20:03:54.39] Backend service launched. 
+[20:05:07.08] Backend service launched. 
+[20:06:16.65] Backend service launched. 
+[20:07:24.48] Backend service launched. 
+[20:08:31.73] FATAL: Retry limit exceeded. 
+[01-04-2026  0:03:39.88] NEXUS Launcher started. 
+[ 0:03:40.40] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[ 0:03:48.62] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[ 0:03:56.44] Starting Frontend... 
+[ 0:03:56.48] Backend service launched. 
+[01-04-2026  8:19:13.64] NEXUS Launcher started. 
+[ 8:19:14.01] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[ 8:19:19.31] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[ 8:19:24.69] Starting Frontend... 
+[ 8:19:24.72] Backend service launched. 
+[ 8:20:21.34] UNHEALTHY STATUS DETECTED. 
+[ 8:20:21.44] Backend service launched. 
+[01-04-2026  9:24:59.12] NEXUS Launcher started. 
+[ 9:24:59.68] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[ 9:25:07.29] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[ 9:25:15.50] Starting Frontend... 
+[ 9:25:15.54] Backend service launched. 
+[01-04-2026  9:57:46.09] NEXUS Launcher started. 
+[ 9:57:46.51] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[ 9:57:56.62] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[ 9:58:07.86] Starting Frontend... 
+[ 9:58:07.89] Backend service launched. 
+[01-04-2026 10:09:26.75] NEXUS Launcher started. 
+[10:09:27.09] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[10:09:35.50] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[10:09:43.71] Starting Frontend... 
+[10:09:43.76] Backend service launched. 
+[10:46:21.71] UNHEALTHY STATUS DETECTED. 
+[10:46:35.95] Backend service launched. 
+[10:48:57.93] UNHEALTHY STATUS DETECTED. 
+[10:48:58.40] Backend service launched. 
+[01-04-2026 10:50:58.28] NEXUS Launcher started. 
+[10:50:58.80] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[10:51:20.00] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[10:51:42.34] Starting Frontend... 
+[10:51:42.41] Backend service launched. 
+[10:53:53.44] Backend service launched. 
+[10:55:25.54] Backend service launched. 
+[10:56:33.68] Backend service launched. 
+[10:57:42.97] Backend service launched. 
+[10:58:51.27] FATAL: Retry limit exceeded. 
+[01-04-2026 11:42:49.15] NEXUS Launcher started. 
+[11:42:49.95] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[11:43:13.04] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[11:44:06.55] Starting Frontend... 
+[11:44:06.61] Backend service launched. 
+[11:46:46.18] Frontend restart triggered. 
+[11:46:56.86] Frontend restart triggered. 
+[11:52:39.74] UNHEALTHY STATUS DETECTED. 
+[11:52:46.42] Backend service launched. 
+[11:54:08.55] Frontend restart triggered. 
+[11:54:18.98] Frontend restart triggered. 
+[01-04-2026 12:34:06.95] NEXUS Launcher started. 
+[12:34:07.43] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[12:34:17.07] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[12:34:26.57] Starting Frontend... 
+[12:34:26.60] Backend service launched. 
+[12:41:39.82] Frontend restart triggered. 
+[12:41:50.24] Frontend restart triggered. 
+[12:43:43.30] Frontend restart triggered. 
+[12:43:53.79] Frontend restart triggered. 
+[12:44:14.27] Frontend restart triggered. 
+[12:49:04.95] UNHEALTHY STATUS DETECTED. 
+[12:49:05.89] Backend service launched. 
+[13:02:38.64] UNHEALTHY STATUS DETECTED. 
+[13:02:39.91] Backend service launched. 
+[13:04:10.70] Backend service launched. 
+[13:05:21.72] Backend service launched. 
+[13:06:30.38] Backend service launched. 
+[13:07:42.07] Backend service launched. 
+[13:08:51.01] FATAL: Retry limit exceeded. 
+[01-04-2026 14:13:53.67] NEXUS Launcher started. 
+[14:13:54.03] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[14:14:03.35] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[14:14:13.05] Starting Frontend... 
+[14:14:13.08] Backend service launched. 
+[14:16:20.29] Backend service launched. 
+[14:16:55.06] UNHEALTHY STATUS DETECTED. 
+[14:17:11.27] Backend service launched. 
+[14:19:16.64] Backend service launched. 
+[14:20:37.99] Backend service launched. 
+[14:21:44.94] Backend service launched. 
+[14:22:51.56] Backend service launched. 
+[14:34:28.04] FATAL: Retry limit exceeded. 
+[02-04-2026 10:45:58.64] NEXUS Launcher started. 
+[10:45:59.15] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[10:46:06.92] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[10:46:14.52] Starting Frontend... 
+[10:46:14.55] Backend service launched. 
+[10:54:59.96] UNHEALTHY STATUS DETECTED. 
+[10:55:02.74] Backend service launched. 
+[10:56:54.82] Backend service launched. 
+[10:58:01.35] Backend service launched. 
+[10:59:09.42] Backend service launched. 
+[11:00:32.89] Backend service launched. 
+[11:02:00.45] FATAL: Retry limit exceeded. 
+[02-04-2026 11:11:33.81] NEXUS Launcher started. 
+[11:11:34.31] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[11:11:46.27] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[11:11:59.53] Starting Frontend... 
+[11:11:59.57] Backend service launched. 
+[02-04-2026 14:18:00.25] NEXUS Launcher started. 
+[14:18:01.19] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[14:18:07.56] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[14:18:13.77] Starting Frontend... 
+[14:18:13.80] Backend service launched. 
+[03-04-2026 13:01:17.50] NEXUS Launcher started. 
+[13:01:18.61] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[13:01:25.22] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[13:01:31.53] Starting Frontend... 
+[13:01:31.56] Backend service launched. 
+[ 0:14:26.57] UNHEALTHY STATUS DETECTED. 
+[ 0:14:28.08] Backend service launched. 
+[04-04-2026 10:49:28.21] NEXUS Launcher started. 
+[10:49:30.66] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[10:50:31.45] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[10:51:53.82] Starting Frontend... 
+[10:51:53.87] Backend service launched. 
+[11:14:23.57] Frontend restart triggered. 
+[11:14:34.30] Frontend restart triggered. 
+[11:33:24.66] UNHEALTHY STATUS DETECTED. 
+[11:33:28.00] Backend service launched. 
+[13:05:06.69] UNHEALTHY STATUS DETECTED. 
+[13:05:37.98] Backend service launched. 
+[13:07:58.85] Backend service launched. 
+[04-04-2026 13:29:40.00] NEXUS Launcher started. 
+[13:29:40.40] Running DB Init... 
+============================================================
+ NEXUS DATABASE INITIALIZER
+============================================================
+Connecting to PostgreSQL as 'postgres'...
+Checking for database 'nexus'...
+[INFO] Database 'nexus' already exists.
+
+============================================================
+ INITIALIZATION COMPLETE
+============================================================
+[13:29:45.18] Running Alembic Migrations... 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+[13:29:49.59] Starting Frontend... 
+[13:29:49.61] Backend service launched. 
+[06-04-2026  0:56:59.36] NEXUS Launcher started. 
+[ 0:57:00.47] Running DB Init... 
+[06-04-2026 10:19:13.29] NEXUS Launcher started. 
+[06-04-2026 10:20:26.46] NEXUS Launcher started. 
+[10:20:26.85] Running DB Init... 
+^C

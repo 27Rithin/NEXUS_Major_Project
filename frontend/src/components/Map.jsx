@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const createCustomIcon = (category, severity_level, isSOS = false) => {
   const getIconColor = (level) => {
     const l = level?.toUpperCase();
-    if (!l) return '#64748B'; // Professional Slate Gray
+    if (!l) return '#64748B'; 
     if (l === 'CRITICAL') return '#EF4444';
     if (l === 'HIGH' || l === 'MEDIUM') return '#F97316';
     return '#22C55E';
@@ -32,16 +32,24 @@ const createCustomIcon = (category, severity_level, isSOS = false) => {
 
   const color = getIconColor(severity_level);
   const iconMarkup = renderToStaticMarkup(
-    <div className={`relative flex items-center justify-center ${isSOS ? 'animate-sos scale-125 z-[1000]' : ''}`}>
+    <div className={`relative flex items-center justify-center ${isSOS ? 'animate-pulse-sos scale-125 z-[1000]' : ''}`}>
+      {/* HOLOGRAPHIC BEACON */}
+      <div 
+        className="absolute bottom-1/2 left-1/2 -translate-x-1/2 w-[2px] h-[50px] origin-bottom animate-pulse"
+        style={{ 
+          background: `linear-gradient(to top, ${color}, transparent)`,
+          boxShadow: `0 0 15px ${color}`
+        }}
+      />
       {/* GLOW SHADOW */}
       <div 
-        className="absolute inset-0 rounded-full blur-[10px]" 
-        style={{ backgroundColor: color, opacity: 0.4 }}
+        className={`absolute inset-0 rounded-full blur-[15px] opacity-60`}
+        style={{ backgroundColor: color }}
       />
       {/* MAIN ICON BODY */}
       <div 
-        className={`relative p-2 rounded-xl border-2 shadow-2xl transition-all flex items-center justify-center bg-[#0B0F19]/90`}
-        style={{ borderColor: color, color: color, zIndex: isSOS ? 1001 : 1 }}
+        className={`relative p-2.5 rounded-2xl border-2 shadow-2xl transition-smooth flex items-center justify-center bg-[#0B0F19]/90 backdrop-blur-xl`}
+        style={{ borderColor: color, color: color, zIndex: isSOS ? 1001 : 1, boxShadow: `0 0 20px ${color}40` }}
       >
         {getIcon(category)}
       </div>
@@ -149,9 +157,9 @@ const NexusMap = ({ events, selectedEvent, activeRoute, onSelectEvent }) => {
             <Polyline
               positions={activeRoute.path_geometry}
               pathOptions={{
-                color: '#3B82F6',
+                color: '#22D3EE',
                 weight: 12,
-                opacity: 0.15,
+                opacity: 0.2,
                 lineJoin: 'round',
                 lineCap: 'round',
                 dashArray: '1, 15',
@@ -162,24 +170,25 @@ const NexusMap = ({ events, selectedEvent, activeRoute, onSelectEvent }) => {
             <Polyline
               positions={activeRoute.path_geometry}
               pathOptions={{
-                color: '#3B82F6',
+                color: '#22D3EE',
                 weight: 4,
                 opacity: 0.9,
                 lineJoin: 'round',
                 lineCap: 'round',
-                dashArray: '2, 12'
+                dashArray: '2, 10',
+                className: 'animate-route-flow' // Custom CSS for flowing dash
               }}
             >
-                <Popup className="nexus-popup">
-                    <div className="p-3 text-center">
-                        <div className="flex items-center justify-center gap-2 mb-2 text-nexus-blue">
-                            <Navigation size={18} className="animate-pulse" />
-                            <span className="text-sm font-orbitron font-black italic">EN ROUTE</span>
+                <Popup className="nexus-popup glass-card">
+                    <div className="p-4 text-center">
+                        <div className="flex items-center justify-center gap-2 mb-3 text-nexus-blue">
+                            <Navigation size={20} className="animate-pulse" />
+                            <span className="text-sm font-orbitron font-black italic tracking-widest">TACTICAL INTERCEPT</span>
                         </div>
-                        <div className="bg-black/40 p-2 rounded-lg border border-nexus-blue/20">
-                            <div className="text-[10px] font-orbitron font-bold text-slate-500 uppercase tracking-widest">ETA // PREDICTED</div>
-                            <div className="text-2xl font-orbitron font-black text-white tracking-widest leading-none mt-1 italic">
-                                {activeRoute.estimated_time_mins || 8.5} <span className="text-[10px] ml-1">MIN</span>
+                        <div className="bg-black/60 p-3 rounded-2xl border border-nexus-blue/30 shadow-[0_0_15px_rgba(34,211,238,0.2)]">
+                            <div className="text-[10px] font-orbitron font-bold text-slate-500 uppercase tracking-widest">PREDICTED ARRIVAL // ETA</div>
+                            <div className="text-3xl font-orbitron font-black text-white tracking-widest leading-none mt-2 italic shadow-nexus">
+                                {activeRoute.estimated_time_mins || 8.5} <span className="text-[10px] ml-1 text-nexus-blue">MIN</span>
                             </div>
                         </div>
                     </div>

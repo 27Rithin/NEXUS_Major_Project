@@ -52,7 +52,9 @@ function App() {
         <Router>
             <AuthProvider>
                 <ToastProvider>
-                    <AnimatedRoutes />
+                    <div className="app-container">
+                        <AnimatedRoutes />
+                    </div>
                 </ToastProvider>
             </AuthProvider>
         </Router>
